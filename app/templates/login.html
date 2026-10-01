@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<title>VaultWard — Secure Login</title>
+<style>
+  :root{
+    --teal-dark:#04201c;
+    --teal:#0b3d35;
+    --teal-glow:#1fd9b0;
+    --gold:#f4c542;
+    --gold-glow:#ffe08a;
+    --white:#eef7f4;
+    --muted:#9fc9bf;
+    --error-red:#ff6b6b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Segoe UI', Roboto, sans-serif;
+    background:radial-gradient(circle at 20% 20%, #0c2e29 0%, var(--teal-dark) 55%, #021210 100%);
+    overflow:hidden;
+    position:relative;
+  }
+  /* ambient glow particles */
+  .glow-orb{
+    position:absolute;
+    border-radius:50%;
+    filter:blur(60px);
+    opacity:0.35;
+    animation:float 9s ease-in-out infinite;
+  }
+  .glow-orb.teal{background:var(--teal-glow);width:280px;height:280px;top:10%;left:8%;}
+  .glow-orb.gold{background:var(--gold-glow);width:220px;height:220px;bottom:10%;right:10%;animation-delay:2s;}
+  @keyframes float{
+    0%,100%{transform:translateY(0px);}
+    50%{transform:translateY(-25px);}
+  }
+
+  .card{
+    position:relative;
+    z-index:2;
+    width:380px;
+    background:rgba(7, 41, 36, 0.65);
+    border:1px solid rgba(31, 217, 176, 0.35);
+    border-radius:18px;
+    padding:40px 36px;
+    -webkit-backdrop-filter:blur(14px);
+    backdrop-filter:blur(14px);
+    box-shadow:
+      0 0 25px rgba(31, 217, 176, 0.25),
+      0 0 60px rgba(244, 197, 66, 0.08),
+      inset 0 0 40px rgba(31, 217, 176, 0.04);
+    transition: all 0.3s ease;
+  }
+
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:6px;
+  }
+  .brand-icon{
+    width:34px;height:34px;
+    border-radius:8px;
+    background:linear-gradient(135deg, var(--teal-glow), var(--gold));
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;color:var(--teal-dark);
+    box-shadow:0 0 14px rgba(31,217,176,0.5);
+  }
+  .brand h1{
+    font-size:20px;
+    color:var(--white);
+    letter-spacing:0.5px;
+  }
+  .tagline{
+    color:var(--muted);
+    font-size:13px;
+    margin-bottom:30px;
+    letter-spacing:0.3px;
+  }
+
+  .field{margin-bottom:18px;}
+  .field label{
+    display:block;
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:6px;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+  }
+  .field input{
+    width:100%;
+    padding:12px 14px;
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(159,201,191,0.25);
+    border-radius:10px;
+    color:var(--white);
+    font-size:14px;
+    outline:none;
+    transition:all 0.25s ease;
+  }
+  .field input:focus{
+    border-color:var(--teal-glow);
+    box-shadow:0 0 0 3px rgba(31,217,176,0.15), 0 0 12px rgba(31,217,176,0.35);
+  }
+  .field input::placeholder{color:rgba(159,201,191,0.4);}
+
+  .row-between{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:24px;
+  }
+  .row-between a{color:var(--gold);text-decoration:none;}
+  .row-between a:hover{text-decoration:underline;}
+
+  .btn-login{
+    width:100%;
+    padding:13px;
+    border:none;
+    border-radius:10px;
+    background:linear-gradient(135deg, var(--teal-glow), #16c79e);
+    color:#02211b;
+    font-weight:700;
+    font-size:14px;
+    letter-spacing:0.4px;
+    cursor:pointer;
+    box-shadow:0 0 18px rgba(31,217,176,0.45);
+    transition:transform 0.15s ease, box-shadow 0.25s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-login:hover{
+    transform:translateY(-1px);
+    box-shadow:0 0 28px rgba(31,217,176,0.65), 0 0 12px rgba(244,197,66,0.3);
+  }
+  .btn-login:active{transform:translateY(0);}
+  .btn-login:disabled{
+    background: #0b3d35;
+    color: var(--muted);
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+
+  .divider{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin:22px 0;
+    color:var(--muted);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+  }
+  .divider::before,.divider::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background:rgba(159,201,191,0.2);
+  }
+
+  .mfa-note{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:12px;
+    color:var(--gold);
+    background:rgba(244,197,66,0.08);
+    border:1px solid rgba(244,197,66,0.25);
+    padding:10px 12px;
+    border-radius:8px;
+  }
+
+  .footer-text{
+    text-align:center;
+    margin-top:24px;
+    font-size:11px;
+    color:rgba(159,201,191,0.5);
+  }
+
+  /* Interactive / Dynamic Styles */
+  #errorMessage {
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.3);
+    color: var(--error-red);
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 20px;
+    display: none;
+  }
+
+  .fade-container {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .hidden {
+    display: none !important;
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  .shake {
+    animation: shake 0.4s ease-in-out;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
+  }
+
+  .spinner {
+    border: 2px solid rgba(2, 33, 27, 0.2);
+    border-left-color: #02211b;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    animation: spin 0.8s linear infinite;
+  }
+
+  .loading-status {
+    min-height: 16px;
+    margin-top: 10px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+  .checkbox-input {
+    width: auto;
+    accent-color: #1fd9b0;
+  }
+  .mfa-note-spacing {
+    margin-bottom: 20px;
+  }
+</style>
+</head>
+<body>
+
+  <div class="glow-orb teal"></div>
+  <div class="glow-orb gold"></div>
+
+  <div class="card" id="loginCard">
+    <div class="brand">
+      <div class="brand-icon">V</div>
+      <h1>VaultWard</h1>
+    </div>
+    <p class="tagline">Encrypted hospital records, accessed only by you.</p>
+
+    <div id="errorMessage"></div>
+
+    <form id="loginForm">
+      <!-- Step 1: Credentials Form -->
+      <div id="credentialsSection" class="fade-container">
+        <div class="field">
+          <label for="username">Username or staff ID</label>
+          <input type="text" id="username" placeholder="e.g. w.madzorera" required>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="Enter your password" required>
+        </div>
+
+        <div class="row-between">
+          <label class="checkbox-label">
+            <input type="checkbox" class="checkbox-input"> Remember device
+          </label>
+          <a href="#">Forgot password?</a>
+        </div>
+      </div>
+
+      <!-- Step 2: MFA Form (hidden by default) -->
+      <div id="mfaSection" class="fade-container hidden">
+        <div class="mfa-note mfa-note-spacing">
+          🔑 Multi-Factor Authentication required. Enter the code from your authenticator app below.
+        </div>
+        <div class="field">
+          <label for="mfaCode">MFA Verification Code</label>
+          <input type="text" id="mfaCode" placeholder="6-digit code" pattern="[0-9]{6}" inputmode="numeric">
+        </div>
+      </div>
+
+      <button type="submit" class="btn-login" id="submitBtn">
+        <span id="btnText">Sign in securely</span>
+      </button>
+      <div id="loadingStatus" class="loading-status" role="status" aria-live="polite"></div>
+    </form>
+
+    <div id="footerSection">
+      <div class="divider">Then verify</div>
+      <div class="mfa-note">
+        A 6-digit code will be requested from your authenticator app before access is granted.
+      </div>
+    </div>
+
+    <p class="footer-text">All sessions are encrypted in transit and logged for audit. Unauthorized access is a criminal offence.</p>
+  </div>
+
+  <script>
+    const loginForm = document.getElementById('loginForm');
+    const loginCard = document.getElementById('loginCard');
+    const credentialsSection = document.getElementById('credentialsSection');
+    const mfaSection = document.getElementById('mfaSection');
+    const footerSection = document.getElementById('footerSection');
+    const errorMessage = document.getElementById('errorMessage');
+    const submitBtn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const mfaInput = document.getElementById('mfaCode');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+    const loadingStatus = document.getElementById('loadingStatus');
+
+    let currentStep = 'login'; // 'login' or 'mfa'
+
+    function showError(message) {
+      errorMessage.textContent = message;
+      errorMessage.style.display = 'block';
+      loginCard.classList.add('shake');
+      setTimeout(() => loginCard.classList.remove('shake'), 400);
+    }
+
+    function clearError() {
+      errorMessage.textContent = '';
+      errorMessage.style.display = 'none';
+    }
+
+    function setSubmitting(isSubmitting) {
+      submitBtn.disabled = isSubmitting;
+      submitBtn.setAttribute('aria-busy', String(isSubmitting));
+      if (isSubmitting) {
+        btnText.innerHTML = '<div class="spinner"></div> Securing session...';
+        loadingStatus.textContent = currentStep === 'login' ? 'Checking your credentials...' : 'Verifying your code...';
+      } else {
+        btnText.textContent = currentStep === 'login' ? 'Sign in securely' : 'Verify and enter';
+        loadingStatus.textContent = '';
+      }
+    }
+
+    async function readResponse(res) {
+      const text = await res.text();
+      try {
+        return text ? JSON.parse(text) : {};
+      } catch (parseError) {
+        return { error: `Server error (${res.status}). Please try again.` };
+      }
+    }
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearError();
+      setSubmitting(true);
+
+      try {
+        if (currentStep === 'login') {
+          const res = await fetch('/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({
+              username: usernameInput.value,
+              password: passwordInput.value
+            })
+          });
+          const data = await readResponse(res);
+
+          if (!res.ok) {
+            showError(data.error || 'Login failed. Please check credentials.');
+            setSubmitting(false);
+            return;
+          }
+
+          if (data.mfa_required) {
+            // Transition to MFA Step
+            currentStep = 'mfa';
+            credentialsSection.classList.add('hidden');
+            footerSection.classList.add('hidden');
+            mfaSection.classList.remove('hidden');
+            mfaInput.required = true;
+            mfaInput.focus();
+            setSubmitting(false);
+          } else {
+            // Logged in successfully
+            window.location.href = '/dashboard';
+          }
+        } else {
+          // MFA Verification Step
+          const res = await fetch('/auth/mfa-verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({
+              code: mfaInput.value
+            })
+          });
+          const data = await readResponse(res);
+
+          if (!res.ok) {
+            showError(data.error || 'Verification failed. Invalid or expired code.');
+            setSubmitting(false);
+            return;
+          }
+
+          // Successfully verified
+          window.location.href = '/dashboard';
+        }
+      } catch (err) {
+        showError('Unable to reach VaultWard. Check that the server is running and try again.');
+        setSubmitting(false);
+      }
+    });
+  </script>
+</body>
+</html>

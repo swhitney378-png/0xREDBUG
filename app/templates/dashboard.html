@@ -1,0 +1,2428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<title>VaultWard — Dashboard</title>
+<style>
+  :root{
+    --teal-dark:#04201c;
+    --teal:#0b3d35;
+    --teal-glow:#1fd9b0;
+    --gold:#dfa60a;
+    --gold-glow:#ffe08a;
+    --gold-soft:#b78b24;
+    --white:#eef7f4;
+    --muted:#9fc9bf;
+    --card-bg:rgba(7, 41, 36, 0.7);
+    --border:1.5px solid rgba(244, 197, 66, 0.52);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    font-family:'Segoe UI', Roboto, sans-serif;
+    background:
+      radial-gradient(circle at 86% 18%, rgba(244,197,66,0.24) 0, rgba(244,197,66,0.08) 17%, transparent 38%),
+      radial-gradient(circle at 8% 78%, rgba(31,217,176,0.2) 0, rgba(31,217,176,0.06) 22%, transparent 44%),
+      linear-gradient(135deg, #031a17 0%, #062f2a 48%, #071c22 100%);
+    color:var(--white);
+    padding:20px;
+    position:relative;
+    overflow-x:hidden;
+  }
+  body::before, body::after{
+    content:"";
+    position:fixed;
+    width:360px;
+    height:360px;
+    border-radius:50%;
+    pointer-events:none;
+    filter:blur(70px);
+    opacity:0.28;
+    z-index:0;
+  }
+  body::before{
+    top:-150px;
+    right:-90px;
+    background:var(--gold-glow);
+    opacity:0.34;
+  }
+  body::after{
+    bottom:-180px;
+    left:-110px;
+    background:var(--teal-glow);
+  }
+  body > *{
+    position:relative;
+    z-index:1;
+  }
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:16px 24px;
+    background:var(--card-bg);
+    border:var(--border);
+    border-radius:14px;
+    margin-bottom:24px;
+    -webkit-backdrop-filter:blur(10px);
+    backdrop-filter:blur(10px);
+    box-shadow:0 0 10px rgba(244,197,66,0.12), 0 8px 28px rgba(0,0,0,0.32), 0 0 34px rgba(31,217,176,0.08);
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .brand-icon{
+    width:34px;height:34px;
+    border-radius:8px;
+    background:linear-gradient(135deg, var(--teal-glow), var(--gold));
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;color:var(--teal-dark);
+    box-shadow:0 0 10px rgba(31,217,176,0.3);
+  }
+  .user-badge{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .badge{
+    background:rgba(31, 217, 176, 0.15);
+    border:1px solid var(--teal-glow);
+    padding:4px 10px;
+    border-radius:6px;
+    font-size:12px;
+    font-weight:600;
+    color:var(--teal-glow);
+  }
+  .badge.gold{
+    background:rgba(244, 197, 66, 0.15);
+    border:1px solid var(--gold);
+    color:var(--gold);
+  }
+  .btn-logout{
+    background:rgba(255,107,107,0.15);
+    border:1px solid rgba(255,107,107,0.3);
+    color:#ff8888;
+    padding:6px 12px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:13px;
+    transition:all 0.2s ease;
+  }
+  .btn-logout:hover{
+    background:rgba(255,107,107,0.3);
+    color:#ffaaaa;
+  }
+  .container{
+    display:grid;
+    grid-template-columns:300px 1fr;
+    gap:24px;
+    max-width:1400px;
+    margin:0 auto;
+  }
+  .sidebar, .main-content{
+    background:linear-gradient(145deg, rgba(7,53,45,0.78), rgba(5,29,34,0.76));
+    border:var(--border);
+    border-radius:16px;
+    padding:24px;
+    -webkit-backdrop-filter:blur(10px);
+    backdrop-filter:blur(10px);
+    box-shadow:0 0 10px rgba(244,197,66,0.12), 0 8px 28px rgba(0,0,0,0.32), 0 0 34px rgba(31,217,176,0.08);
+  }
+  .main-content { min-width:0; }
+  h2{
+    font-size:18px;
+    margin-bottom:18px;
+    color:var(--gold-glow);
+    text-shadow:0 0 16px rgba(244,197,66,0.28);
+    border-bottom:1.5px solid rgba(244, 197, 66, 0.24);
+    padding-bottom:8px;
+  }
+  .menu-item{
+    padding:12px;
+    border-radius:8px;
+    cursor:pointer;
+    margin-bottom:8px;
+    transition:all 0.2s ease;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .menu-item:hover, .menu-item.active{
+    background:linear-gradient(90deg, rgba(31,217,176,0.18), rgba(244,197,66,0.08));
+    color:var(--teal-glow);
+    box-shadow:inset 3px 0 0 var(--gold);
+  }
+  .search-box{
+    display:flex;
+    gap:10px;
+    margin-bottom:20px;
+  }
+  input, select, textarea{
+    flex:1;
+    padding:10px 14px;
+    background:rgba(255,255,255,0.03);
+    border:1.5px solid rgba(244,197,66,0.44);
+    border-radius:8px;
+    color:var(--white);
+    outline:none;
+  }
+  select option{
+    background:#07352f;
+    color:var(--white);
+  }
+  input:focus, select:focus, textarea:focus{
+    border-color:var(--gold-glow);
+    box-shadow:0 0 0 2px rgba(244,197,66,0.1), 0 0 14px rgba(244,197,66,0.2);
+  }
+  .btn{
+    padding:10px 18px;
+    border:none;
+    border-radius:8px;
+    background:linear-gradient(135deg, var(--teal-glow), #13b88e 58%, var(--gold));
+    color:var(--teal-dark);
+    font-weight:600;
+    cursor:pointer;
+    transition:all 0.2s ease;
+  }
+  .btn:hover{
+    box-shadow:0 0 16px rgba(31,217,176,0.45), 0 0 22px rgba(244,197,66,0.2);
+    transform:translateY(-1px);
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:10px;
+  }
+  th, td{
+    text-align:left;
+    padding:12px;
+    border-bottom:1.5px solid rgba(244,197,66,0.24);
+  }
+  th{
+    color:var(--muted);
+    font-weight:600;
+    font-size:13px;
+    text-transform:uppercase;
+  }
+  tr:hover td{
+    background:rgba(255,255,255,0.02);
+  }
+  .loading{
+    text-align:center;
+    padding:40px;
+    color:var(--muted);
+  }
+  .hidden {
+    display: none !important;
+  }
+  .modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 80% 20%, rgba(244,197,66,0.13), transparent 30%), rgba(0, 13, 16, 0.72);
+    z-index: 50;
+  }
+  .modal-content {
+    width: min(100%, 960px);
+    max-height: 90vh;
+    overflow-y: auto;
+    background:linear-gradient(145deg, rgba(5,50,43,0.98), rgba(5,29,34,0.98));
+    border:1.5px solid rgba(244,197,66,0.62);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow:0 0 12px rgba(244,197,66,0.16), 0 24px 80px rgba(0,0,0,0.5), 0 0 42px rgba(31,217,176,0.14);
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+  .modal-close {
+    background: transparent;
+    border: none;
+    color: var(--white);
+    font-size: 28px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .form-grid-full {
+    grid-column: 1 / -1;
+  }
+  textarea {
+    min-height: 84px;
+  }
+  .error-text {
+    color: #ff8a8a;
+    margin-bottom: 14px;
+    font-size: 14px;
+  }
+  .align-center-margin-10 {
+    align-self: center;
+    margin-left: 10px;
+  }
+  .margin-bottom-20 {
+    margin-bottom: 20px;
+  }
+  .tiers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-top: 15px;
+  }
+  .text-center-muted {
+    text-align: center;
+    color: var(--muted);
+  }
+  .btn-small {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+  .btn-danger {
+    background:linear-gradient(135deg, #ff8a76, #d9534f);
+    color:#2a1010;
+  }
+  .details-grid {
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:12px;
+  }
+  .details-grid > div {
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    padding:12px;
+    border:1.5px solid rgba(244,197,66,0.24);
+    border-radius:8px;
+    background:rgba(255,255,255,0.03);
+  }
+  .details-grid strong { color:var(--gold-glow); font-size:12px; text-transform:uppercase; }
+  .details-grid span { color:var(--white); word-break:break-word; }
+  .details-full { grid-column:1 / -1; }
+  .records-heading { color:var(--gold-glow); margin:22px 0 10px; }
+  .record-item { padding:12px; border-left:3px solid var(--gold); background:rgba(255,255,255,0.03); margin-bottom:8px; }
+  .record-item span { color:var(--muted); font-size:12px; margin-left:8px; }
+  .record-item p { margin-top:6px; }
+  .muted-message { color:var(--muted); }
+  #toastContainer {
+    position:fixed;
+    top:24px;
+    right:24px;
+    z-index:100;
+    display:grid;
+    gap:10px;
+    width:min(360px, calc(100vw - 48px));
+  }
+  .toast {
+    padding:13px 16px;
+    border:1.5px solid var(--gold);
+    border-radius:10px;
+    background:rgba(5,35,33,0.96);
+    color:var(--white);
+    box-shadow:0 0 18px rgba(244,197,66,0.2);
+    animation:toast-in 0.25s ease-out;
+  }
+  .toast.error { border-color:#ff7b7b; box-shadow:0 0 18px rgba(255,107,107,0.2); }
+  .toast-refresh { animation:toast-refresh 0.25s ease-out; }
+  @keyframes toast-refresh { 50% { opacity:0.7; transform:translateX(4px); } }
+  @keyframes toast-in { from { opacity:0; transform:translateX(18px); } to { opacity:1; transform:translateX(0); } }
+  .system-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:14px; }
+  .system-card { padding:16px; border:1.5px solid rgba(244,197,66,0.3); border-radius:10px; background:rgba(255,255,255,0.03); }
+  .system-card strong { display:block; color:var(--gold-glow); font-size:12px; text-transform:uppercase; margin-bottom:8px; }
+  .system-card span { font-size:18px; }
+  .security-feed { display:grid; gap:10px; }
+  .security-event { border-left:4px solid var(--teal-glow); padding:14px 16px; background:rgba(255,255,255,0.03); border-radius:0 8px 8px 0; }
+  .security-event.critical { border-left-color:#ff6b6b; }
+  .security-event.high, .security-event.warning { border-left-color:var(--gold-glow); }
+  .security-event-header { display:flex; justify-content:space-between; gap:12px; align-items:baseline; }
+  .security-event-title { color:var(--white); font-weight:700; }
+  .security-event-meta { color:var(--muted); font-size:12px; }
+  .security-event-message { color:var(--muted); font-size:13px; line-height:1.5; margin-top:6px; }
+  .security-unread { box-shadow:0 0 0 1px rgba(244,197,66,0.25); }
+  .tier-card {
+    background: rgba(255,255,255,0.02);
+    border: 1.5px solid rgba(244,197,66,0.32);
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .tier-card-header {
+    color: var(--gold);
+    margin-bottom: 10px;
+  }
+  .tier-card-algo {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .tier-card-detail {
+    font-size: 12px;
+    margin-bottom: 10px;
+  }
+  .tier-card-footer {
+    margin-top: 15px;
+  }
+  .tier-card-price {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  .tier-card-price-sub {
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .btn-full {
+    width: 100%;
+  }
+  .analytics-summary {
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));
+    gap:14px;
+    margin:16px 0 22px;
+  }
+  .analytics-stat {
+    padding:16px;
+    border:1.5px solid rgba(31,217,176,0.3);
+    border-radius:10px;
+    background:rgba(255,255,255,0.03);
+  }
+  .analytics-stat strong { display:block; color:var(--muted); font-size:12px; text-transform:uppercase; margin-bottom:8px; }
+  .analytics-stat span { color:var(--gold-glow); font-size:28px; font-weight:700; }
+  .analytics-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:18px; }
+  .analytics-panel {
+    min-width:0;
+    padding:16px;
+    border:1.5px solid rgba(244,197,66,0.3);
+    border-radius:10px;
+    background:rgba(255,255,255,0.025);
+  }
+  .analytics-panel.wide { grid-column:1 / -1; }
+  .analytics-panel h3 { color:var(--gold-glow); font-size:15px; margin-bottom:4px; }
+  .analytics-panel p { color:var(--muted); font-size:12px; margin-bottom:14px; }
+  .chart-wrap { position:relative; height:230px; }
+  .chart-wrap canvas { width:100%; height:100%; display:block; }
+  .tier-bars { display:grid; gap:14px; margin-top:18px; }
+  .tier-bar-row { display:grid; grid-template-columns:92px 1fr 42px; gap:10px; align-items:center; font-size:13px; }
+  .tier-bar-track { height:10px; background:rgba(255,255,255,0.08); border-radius:5px; overflow:hidden; }
+  .tier-bar-fill { height:100%; min-width:2px; background:linear-gradient(90deg, var(--teal-glow), var(--gold)); border-radius:5px; }
+  @media (max-width:760px) { .analytics-grid { grid-template-columns:1fr; } .analytics-panel.wide { grid-column:auto; } }
+  .tier-comparison {
+    width:100%;
+    border-collapse:collapse;
+    margin:18px 0 24px;
+    font-size:13px;
+  }
+  .tier-comparison th,
+  .tier-comparison td {
+    padding:12px 10px;
+    border-bottom:1px solid rgba(159,201,191,0.18);
+    text-align:left;
+    vertical-align:top;
+  }
+  .tier-comparison th { color:var(--gold-glow); font-weight:700; }
+  .tier-comparison td:not(:first-child),
+  .tier-comparison th:not(:first-child) { text-align:center; }
+  .tier-comparison .price-line { display:block; color:var(--white); font-size:16px; font-weight:700; }
+  .tier-comparison .price-note { display:block; color:var(--muted); font-size:11px; margin-top:3px; }
+  .tier-comparison-wrap { overflow-x:auto; }
+  .checkout-summary {
+    background:rgba(31,217,176,0.08);
+    border:1px solid rgba(31,217,176,0.25);
+    border-radius:8px;
+    padding:12px;
+    margin-bottom:16px;
+  }
+  .checkout-summary strong { color:var(--gold-glow); }
+  .payment-note { color:var(--muted); font-size:12px; margin-top:10px; line-height:1.5; }
+  #teamUsersList { overflow-x:auto; }
+  #teamUsersList table { min-width:980px; }
+  #teamUserForm .form-actions { flex-wrap:wrap; }
+  .profile-layout { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:18px; }
+  .profile-panel { padding:18px; border:1.5px solid rgba(244,197,66,0.3); border-radius:10px; background:rgba(255,255,255,0.025); }
+  .profile-panel h3 { color:var(--gold-glow); font-size:15px; margin-bottom:14px; }
+  .profile-value { display:flex; justify-content:space-between; gap:14px; padding:9px 0; border-bottom:1px solid rgba(159,201,191,0.15); font-size:13px; }
+  .profile-value:last-child { border-bottom:0; }
+  .profile-value span:first-child { color:var(--muted); }
+  .profile-value span:last-child { text-align:right; word-break:break-word; }
+  .profile-wide { grid-column:1 / -1; }
+  .mfa-status { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
+  .status-on { color:var(--teal-glow); }
+  .status-off { color:var(--gold-glow); }
+  .qr-wrap { display:flex; gap:18px; align-items:center; margin:14px 0; flex-wrap:wrap; }
+  .qr-wrap img { width:180px; height:180px; background:#fff; padding:8px; border-radius:8px; }
+  .device-list { display:grid; gap:10px; }
+  .device-item { padding:12px; border-left:3px solid var(--teal-glow); background:rgba(255,255,255,0.03); }
+  .device-item strong { display:block; font-size:13px; }
+  .device-item span { display:block; color:var(--muted); font-size:12px; margin-top:4px; }
+  .backup-summary { display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:14px; margin:18px 0 22px; }
+  .backup-stat { padding:16px; border:1.5px solid rgba(31,217,176,0.3); border-radius:10px; background:rgba(255,255,255,0.03); }
+  .backup-stat strong { display:block; color:var(--muted); font-size:12px; text-transform:uppercase; margin-bottom:8px; }
+  .backup-stat span { color:var(--gold-glow); font-size:18px; font-weight:700; word-break:break-word; }
+  @media (max-width:760px) { .profile-layout { grid-template-columns:1fr; } .profile-wide { grid-column:auto; } }
+  @media (max-width:640px) {
+    .tier-comparison { min-width:680px; }
+  }
+  .documentation-nav { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0 24px; }
+  .documentation-nav a { color:var(--teal-glow); border:1px solid rgba(31,217,176,0.32); padding:7px 10px; border-radius:7px; text-decoration:none; font-size:12px; }
+  .documentation-nav a:hover { background:rgba(31,217,176,0.12); }
+  .doc-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin:16px 0 26px; }
+  .doc-card { padding:16px; border:1px solid rgba(31,217,176,0.2); border-radius:10px; background:rgba(255,255,255,0.03); }
+  .doc-card h3 { color:var(--gold-glow); font-size:15px; margin-bottom:8px; }
+  .doc-card p, .doc-card li, .doc-section p { color:var(--muted); font-size:13px; line-height:1.6; }
+  .doc-card ul, .doc-section ul { padding-left:20px; }
+  .doc-section { scroll-margin-top:20px; margin:28px 0; }
+  .doc-section h3 { color:var(--teal-glow); margin-bottom:8px; }
+  .doc-table { width:100%; border-collapse:collapse; margin-top:12px; font-size:12px; }
+  .doc-table th, .doc-table td { text-align:left; padding:10px; border-bottom:1px solid rgba(159,201,191,0.18); vertical-align:top; }
+  .doc-table th { color:var(--gold-glow); }
+</style>
+</head>
+<body data-initial-section="{{ initial_section|e }}">
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon">V</div>
+      <h1>VaultWard Portal</h1>
+    </div>
+    <div class="user-badge">
+      <span id="userNameText">Loading...</span>
+      <span id="userRoleBadge" class="badge">ROLE</span>
+      <span id="userTierBadge" class="badge gold">TIER</span>
+      <button class="btn-logout" onclick="logout()">Sign Out</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="sidebar">
+      <h2>Navigation</h2>
+      <div class="menu-item active" onclick="showSection('patients')">👥 Patients</div>
+      <div id="adminMenu" style="display:none;">
+        <div class="menu-item" onclick="showSection('audit')">📜 Audit Log</div>
+        <div class="menu-item" onclick="showSection('system')">⚙️ System Info</div>
+        <div class="menu-item" onclick="showSection('team')">👥 Team / User Management</div>
+      </div>
+      <div class="menu-item" onclick="showSection('analytics')">📊 Reports &amp; Analytics</div>
+      <div class="menu-item" onclick="showSection('resilience')">🛡️ System Resilience</div>
+      <div class="menu-item" onclick="showSection('backups')">💾 Data Backup &amp; Recovery</div>
+      <div class="menu-item" onclick="showSection('privacy')">🛡️ Privacy & Governance</div>
+      <div class="menu-item" onclick="showSection('consent')">✅ Patient Consent</div>
+      <div class="menu-item" onclick="showSection('security')">🔔 Security &amp; Activity <span id="securityUnreadBadge" class="badge gold" style="display:none;float:right;">0</span></div>
+      <div class="menu-item" onclick="showSection('profile')">👤 My Profile &amp; Settings</div>
+      <div class="menu-item" onclick="showSection('subscription')">💳 Billing &amp; Payment History</div>
+      <div class="menu-item" onclick="showSection('integrations')">🔌 Integrations &amp; API Keys</div>
+      <div class="menu-item" onclick="showSection('documentation')">📘 Documentation</div>
+    </div>
+
+    <div class="main-content">
+      <!-- Patients Section -->
+      <div id="patientsSection" class="section">
+        <h2>Patient Records</h2>
+        <div class="search-box">
+          <input type="text" id="patientSearch" placeholder="Search by patient name..." oninput="fetchPatients()">
+          <button class="btn" onclick="openNewPatientModal()">+ Add Patient</button>
+        </div>
+        <div id="patientsList">
+          <div class="loading">Loading patient database...</div>
+        </div>
+
+        <div id="newPatientModal" class="modal hidden">
+          <div class="modal-content">
+            <div class="modal-header">
+              <div>
+                <h3 id="patientFormTitle" style="margin:0;color:var(--teal-glow);">New Patient</h3>
+                <p style="margin-top:6px; color:var(--muted); font-size:13px;">Enter the patient details below. Patient ID is generated automatically.</p>
+              </div>
+              <button class="modal-close" onclick="closeNewPatientModal()">×</button>
+            </div>
+            <div id="patientFormError" class="error-text" style="display:none;"></div>
+            <form id="newPatientForm" onsubmit="submitNewPatientForm(event)">
+              <div class="form-grid">
+                <div>
+                  <label>Full Name <span style="opacity:0.8;font-size:12px;">(first, middle, last)</span></label>
+                  <input type="text" id="new_full_name" required>
+                </div>
+                <div>
+                  <label>Date of Birth</label>
+                  <input type="text" id="new_date_of_birth" inputmode="numeric" maxlength="10" placeholder="YYYY-MM-DD" pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}" required>
+                </div>
+                <div>
+                  <label>Gender / Sex</label>
+                  <select id="new_gender">
+                    <option value="">Select</option>
+                    <option value="female">Female</option>
+                    <option value="male">Male</option>
+                    <option value="other">Other</option>
+                    <option value="unspecified">Unspecified</option>
+                  </select>
+                </div>
+                <div>
+                  <label>National ID / Passport number</label>
+                  <input type="text" id="new_national_id">
+                </div>
+                <div>
+                  <label>Phone number</label>
+                  <input type="text" id="new_phone">
+                </div>
+                <div>
+                  <label>Email (optional)</label>
+                  <input type="email" id="new_email">
+                </div>
+                <div class="form-grid-full">
+                  <label>Physical address</label>
+                  <textarea id="new_address"></textarea>
+                </div>
+                <div>
+                  <label>Next of kin / emergency contact</label>
+                  <input type="text" id="new_next_of_kin">
+                </div>
+                <div>
+                  <label>Blood type</label>
+                  <input type="text" id="new_blood_type" placeholder="e.g. A+, O-">
+                </div>
+                <div class="form-grid-full">
+                  <label>Known allergies</label>
+                  <textarea id="new_known_allergies"></textarea>
+                </div>
+                <div class="form-grid-full">
+                  <label>Chronic conditions / pre-existing conditions</label>
+                  <textarea id="new_chronic_conditions"></textarea>
+                </div>
+                <div class="form-grid-full">
+                  <label>Current medications</label>
+                  <textarea id="new_current_medications"></textarea>
+                </div>
+                <div>
+                  <label>Primary physician / attending doctor</label>
+                  <input type="text" id="new_primary_physician">
+                </div>
+                <div>
+                  <label>Admission date <span style="opacity:0.8;font-size:12px;">(YYYY-MM-DD)</span></label>
+                  <input type="text" id="new_admission_date" inputmode="numeric" maxlength="10" placeholder="YYYY-MM-DD" pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}">
+                </div>
+                <div>
+                  <label>Department / ward</label>
+                  <input type="text" id="new_department" placeholder="e.g. Cardiology">
+                </div>
+                <div>
+                  <label>Insurance provider</label>
+                  <input type="text" id="new_insurance_provider" placeholder="e.g. CIMAS">
+                </div>
+                <div>
+                  <label>Medical aid number</label>
+                  <input type="text" id="new_medical_aid_number">
+                </div>
+                <div class="form-grid-full">
+                  <label>Referring facility</label>
+                  <textarea id="new_referring_facility"></textarea>
+                </div>
+              </div>
+              <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:10px;">
+                <button type="button" class="btn" style="background:rgba(255,255,255,0.08);" onclick="closeNewPatientModal()">Cancel</button>
+                <button type="submit" class="btn" id="patientFormSubmit">Create Patient</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div id="patientDetailsModal" class="modal hidden">
+          <div class="modal-content">
+            <div class="modal-header">
+              <div>
+                <h3 id="patientDetailsTitle" style="margin:0;color:var(--teal-glow);">Patient Details</h3>
+                <p id="patientDetailsSubtitle" style="margin-top:6px; color:var(--muted); font-size:13px;"></p>
+              </div>
+              <button class="modal-close" onclick="closePatientDetails()">×</button>
+            </div>
+            <div id="patientDetailsBody"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Audit Section -->
+      <div id="securitySection" class="section" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div>
+            <h2>Security &amp; Activity Center</h2>
+            <p style="color:var(--muted);font-size:13px;margin-top:6px;">Human-readable alerts from sign-ins, MFA, and emergency access activity.</p>
+          </div>
+          <button class="btn btn-small" onclick="markSecurityActivityRead()">Mark all read</button>
+        </div>
+        <div id="securityActivityList" class="security-feed" style="margin-top:18px;">
+          <div class="loading">Loading security activity...</div>
+        </div>
+      </div>
+
+      <div id="profileSection" class="section" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div>
+            <h2>My Profile &amp; Account Settings</h2>
+            <p style="color:var(--muted);font-size:13px;margin-top:6px;">Manage your sign-in security and review the access assigned to your account.</p>
+          </div>
+          <button class="btn btn-small" onclick="fetchProfile()" title="Refresh profile">↻ Refresh</button>
+        </div>
+        <div class="profile-layout" style="margin-top:18px;">
+          <div class="profile-panel">
+            <h3>Account details</h3>
+            <div id="profileDetails"><div class="loading">Loading profile...</div></div>
+          </div>
+          <div class="profile-panel">
+            <h3>Change password</h3>
+            <form onsubmit="changePassword(event)">
+              <label for="profileCurrentPassword">Current password</label>
+              <input id="profileCurrentPassword" type="password" autocomplete="current-password" required>
+              <label for="profileNewPassword" style="display:block;margin-top:12px;">New password</label>
+              <input id="profileNewPassword" type="password" autocomplete="new-password" minlength="12" required>
+              <label for="profileConfirmPassword" style="display:block;margin-top:12px;">Confirm new password</label>
+              <input id="profileConfirmPassword" type="password" autocomplete="new-password" minlength="12" required>
+              <button class="btn" type="submit" style="margin-top:14px;">Update password</button>
+            </form>
+          </div>
+          <div class="profile-panel">
+            <h3>Multi-factor authentication</h3>
+            <div id="mfaStatus"><div class="loading">Loading MFA status...</div></div>
+            <div id="mfaSetup" class="hidden">
+              <p style="color:var(--muted);font-size:13px;line-height:1.5;">Scan this QR code with your authenticator app, then enter the six-digit code to confirm.</p>
+              <div class="qr-wrap"><img id="mfaQrCode" alt="MFA setup QR code"><div><strong>Manual key</strong><p id="mfaSecret" style="color:var(--gold-glow);word-break:break-all;margin-top:6px;"></p></div></div>
+              <form onsubmit="confirmMfa(event)"><label for="mfaSetupCode">Authenticator code</label><input id="mfaSetupCode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required><button class="btn" type="submit" style="margin-top:12px;">Enable MFA</button></form>
+            </div>
+            <button id="startMfaButton" class="btn" type="button" onclick="startMfaSetup()">Set up MFA</button>
+            <div id="mfaDisable" class="hidden" style="margin-top:14px;"><form onsubmit="disableMfa(event)"><label for="mfaDisablePassword">Password to disable MFA</label><input id="mfaDisablePassword" type="password" required><label for="mfaDisableCode" style="display:block;margin-top:10px;">Current authenticator code</label><input id="mfaDisableCode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required><button class="btn btn-danger" type="submit" style="margin-top:12px;">Disable MFA</button></form></div>
+          </div>
+          <div class="profile-panel profile-wide">
+            <h3>Recent devices and sessions</h3>
+            <p style="color:var(--muted);font-size:13px;margin-bottom:14px;">These sign-ins also appear in Security &amp; Activity. Sign out here to end the current browser session.</p>
+            <div id="profileDevices" class="device-list"><div class="loading">Loading devices...</div></div>
+            <button class="btn btn-logout" type="button" onclick="logout()" style="margin-top:14px;">Sign out this session</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="auditSection" class="section" style="display:none;">
+        <h2>System Audit Logs</h2>
+        <div class="search-box">
+          <button class="btn" onclick="verifyChain()">Verify Hash Chain Integrity</button>
+          <div id="verifyResult" style="align-self: center; margin-left: 10px;"></div>
+        </div>
+        <div id="auditList">
+          <div class="loading">Loading audit records...</div>
+        </div>
+      </div>
+
+      <div id="systemSection" class="section" style="display:none;">
+        <h2>System Information</h2>
+        <div id="systemInfoBody" class="system-grid">
+          <div class="loading">Loading system information...</div>
+        </div>
+      </div>
+
+      <div id="analyticsSection" class="section" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;">
+          <div>
+            <h2>Reports &amp; Analytics</h2>
+            <p style="color:var(--muted);font-size:13px;margin-top:6px;">A 30-day view of organization scale, subscription mix, and emergency access activity.</p>
+          </div>
+          <button class="btn btn-small" onclick="fetchAnalytics()" title="Refresh analytics">↻ Refresh</button>
+        </div>
+        <div id="analyticsSummary" class="analytics-summary"><div class="loading">Loading reports...</div></div>
+        <div class="analytics-grid">
+          <div class="analytics-panel">
+            <h3>Subscription tier distribution</h3>
+            <p>Active users grouped by their current encryption tier.</p>
+            <div id="tierBars" class="tier-bars"></div>
+          </div>
+          <div class="analytics-panel">
+            <h3>Break-glass frequency</h3>
+            <p>Emergency record access events by day, last 30 days.</p>
+            <div class="chart-wrap"><canvas id="breakGlassChart" aria-label="Break-glass events over the last 30 days"></canvas></div>
+          </div>
+          <div class="analytics-panel wide">
+            <h3>Record growth</h3>
+            <p>New medical records created by day, last 30 days.</p>
+            <div class="chart-wrap"><canvas id="recordGrowthChart" aria-label="Medical records created over the last 30 days"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="teamSection" class="section" style="display:none;">
+        <h2>Team / User Management</h2>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:18px;">Create new staff accounts, assign roles, toggle MFA, and manage active status without calling the API directly.</p>
+
+        <div class="system-card" style="margin-bottom:20px;">
+          <strong>Create user</strong>
+          <form id="teamUserForm" onsubmit="submitTeamUserForm(event)" style="margin-top:12px;">
+            <div class="form-grid">
+              <div>
+                <label for="teamUsername">Username</label>
+                <input id="teamUsername" type="text" required>
+              </div>
+              <div>
+                <label for="teamEmail">Email</label>
+                <input id="teamEmail" type="email" required>
+              </div>
+              <div>
+                <label for="teamPassword">Password</label>
+                <input id="teamPassword" type="password" required>
+              </div>
+              <div>
+                <label for="teamRole">Role</label>
+                <select id="teamRole" required>
+                  <option value="admin">Admin</option>
+                  <option value="doctor">Doctor</option>
+                  <option value="nurse">Nurse</option>
+                  <option value="records_officer">Records Officer</option>
+                </select>
+              </div>
+              <div>
+                <label for="teamDepartment">Department</label>
+                <input id="teamDepartment" type="text" placeholder="e.g. Cardiology">
+              </div>
+              <div>
+                <label for="teamTier">Tier</label>
+                <select id="teamTier">
+                  <option value="free">Free</option>
+                  <option value="pro">Pro</option>
+                  <option value="enterprise">Enterprise</option>
+                </select>
+              </div>
+            </div>
+            <div id="teamUserFormActions" class="form-actions" style="display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(159,201,191,0.18);">
+              <span style="color:var(--muted);font-size:12px;">New accounts start on Free until paid access is verified.</span>
+              <button type="submit" class="btn">Save user</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="teamUsersList">
+          <div class="loading">Loading team members...</div>
+        </div>
+      </div>
+
+      <div id="resilienceSection" class="section" style="display:none;">
+        <h2>System Resilience</h2>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:18px;">Monitor uptime, create encrypted database backups, restore a verified backup, and rotate Pro or Enterprise encryption keys.</p>
+        <div id="healthStatus" class="system-grid" style="margin-bottom:20px;">
+          <div class="loading">Checking system health...</div>
+        </div>
+
+        <div class="system-card" style="margin-bottom:20px;">
+          <strong>Encrypted backup</strong>
+          <p style="color:var(--muted);font-size:12px;margin:8px 0 12px;">Creates an AES-256-GCM encrypted SQLite snapshot with an integrity hash.</p>
+          <button class="btn" onclick="createEncryptedBackup()">Create encrypted backup</button>
+          <div id="backupResult" style="color:var(--muted);font-size:12px;margin-top:10px;"></div>
+        </div>
+
+        <div class="system-card" style="margin-bottom:20px;">
+          <strong>Restore verified backup</strong>
+          <p style="color:var(--muted);font-size:12px;margin:8px 0 12px;">Restoring replaces the active SQLite database. Use a tested backup filename and obtain approval first.</p>
+          <div class="search-box" style="margin:0;">
+            <input type="text" id="restoreBackupFilename" list="availableBackupFilenames" placeholder="Select or enter a backup filename" autocomplete="off">
+            <datalist id="availableBackupFilenames"></datalist>
+            <button class="btn btn-danger" onclick="restoreEncryptedBackup()">Restore backup</button>
+          </div>
+        </div>
+
+        <div class="system-card">
+          <strong>Encryption key rotation</strong>
+          <p style="color:var(--muted);font-size:12px;margin:8px 0 12px;">Scheduled defaults: Pro every 90 days, Enterprise every 30 days. Existing records remain readable through their recorded key version.</p>
+          <div class="search-box" style="margin:0;">
+            <select id="rotationTier">
+              <option value="">Rotate Pro and Enterprise</option>
+              <option value="pro">Rotate Pro only</option>
+              <option value="enterprise">Rotate Enterprise only</option>
+            </select>
+            <button class="btn" onclick="rotateEncryptionKeys()">Rotate keys now</button>
+          </div>
+          <div id="rotationResult" style="color:var(--muted);font-size:12px;margin-top:10px;"></div>
+        </div>
+      </div>
+
+      <div id="backupsSection" class="section" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;">
+          <div>
+            <h2>Data Backup &amp; Recovery</h2>
+            <p style="color:var(--muted);font-size:13px;margin-top:6px;">Review encrypted database snapshots and keep a tested recovery point available.</p>
+          </div>
+          <button class="btn btn-small" onclick="fetchBackups()" title="Refresh backup status">↻ Refresh</button>
+        </div>
+        <div id="backupSummary" class="backup-summary"><div class="loading">Loading backup status...</div></div>
+
+        <div id="backupAdminControls" class="system-card" style="display:none;margin-bottom:20px;">
+          <strong>Administrator recovery controls</strong>
+          <p style="color:var(--muted);font-size:12px;margin:8px 0 12px;">Manual backups are encrypted with AES-256-GCM and include an integrity hash. Restore only an approved, tested snapshot.</p>
+          <button class="btn" onclick="createEncryptedBackupFromPage()">Create encrypted backup</button>
+          <div id="backupPageResult" style="color:var(--muted);font-size:12px;margin-top:10px;"></div>
+          <div class="search-box" style="margin:16px 0 0;">
+            <input type="text" id="backupPageRestoreFilename" placeholder="Select a backup below or enter a filename" autocomplete="off">
+            <button class="btn btn-danger" onclick="restoreEncryptedBackupFromPage()">Restore verified backup</button>
+          </div>
+        </div>
+
+        <div class="system-card">
+          <strong>Available encrypted backups</strong>
+          <div id="backupHistory" style="overflow-x:auto;margin-top:12px;"><div class="loading">Loading backup history...</div></div>
+        </div>
+      </div>
+
+      <div id="privacySection" class="section" style="display:none;">
+        <h2>Privacy & Governance</h2>
+        <div id="privacyPolicy" class="system-grid" style="margin-bottom:20px;">
+          <div class="loading">Loading retention policy...</div>
+        </div>
+
+        <div class="search-box" style="flex-wrap:wrap;">
+          <button class="btn" onclick="downloadAllPatientData()">Export all patient data</button>
+          <button class="btn" onclick="previewRetention()">Preview retention purge</button>
+          <button class="btn btn-danger" onclick="purgeRetention()">Run retention purge</button>
+        </div>
+
+        <div class="system-card" style="margin-bottom:20px;">
+          <strong>Single-patient export</strong>
+          <div class="search-box" style="margin:10px 0 0;">
+            <input type="number" id="privacyExportPatientId" min="1" placeholder="Patient database ID">
+            <button class="btn" onclick="downloadPatientData()">Export patient</button>
+          </div>
+        </div>
+
+        <div class="system-card" style="margin-bottom:20px;">
+          <strong>Legal hold</strong>
+          <div class="search-box" style="margin:10px 0 0;">
+            <input type="number" id="privacyHoldPatientId" min="1" placeholder="Patient database ID">
+            <select id="privacyHoldValue">
+              <option value="true">Place hold</option>
+              <option value="false">Release hold</option>
+            </select>
+            <button class="btn" onclick="updateLegalHold()">Save legal hold</button>
+          </div>
+        </div>
+
+        <h3 style="color:var(--gold-glow);margin:20px 0 10px;">Erasure requests</h3>
+        <div id="erasureRequestsList"><div class="loading">Loading erasure requests...</div></div>
+
+        <h3 style="color:var(--gold-glow);margin:20px 0 10px;">Security incidents</h3>
+        <form onsubmit="createSecurityIncident(event)" class="system-card" style="margin-bottom:15px;">
+          <div class="form-grid">
+            <div><label for="incidentTitle">Incident title</label><input id="incidentTitle" required></div>
+            <div><label for="incidentSeverity">Severity</label><select id="incidentSeverity"><option>low</option><option selected>medium</option><option>high</option><option>critical</option></select></div>
+            <div class="form-grid-full"><label for="incidentSummary">Summary</label><textarea id="incidentSummary" rows="3" required></textarea></div>
+          </div>
+          <button type="submit" class="btn" style="margin-top:12px;">Open incident</button>
+        </form>
+        <div id="incidentsList"><div class="loading">Loading incidents...</div></div>
+        <p style="color:var(--muted);font-size:12px;margin-top:18px;">The full retention policy is in DATA_GOVERNANCE.md. The breach notification procedure is in INCIDENT_RESPONSE.md.</p>
+      </div>
+
+      <div id="consentSection" class="section" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;">
+          <div>
+            <h2>Patient Consent Management</h2>
+            <p style="color:var(--muted);font-size:13px;margin-top:6px;">Record who authorized access, the purpose of access, and when that authorization was withdrawn.</p>
+          </div>
+          <button class="btn btn-small" onclick="fetchConsents()" title="Refresh consent records">↻ Refresh</button>
+        </div>
+
+        <form id="consentForm" onsubmit="grantConsent(event)" class="system-card" style="margin:18px 0 22px;">
+          <strong>Record consent</strong>
+          <div class="form-grid" style="margin-top:12px;">
+            <div>
+              <label for="consentPatient">Patient</label>
+              <select id="consentPatient" required><option value="">Loading patients...</option></select>
+            </div>
+            <div>
+              <label for="consentPurpose">Purpose of access</label>
+              <input id="consentPurpose" maxlength="200" placeholder="e.g. Ongoing clinical treatment" required>
+            </div>
+            <div>
+              <label for="consentExpires">Expires on (optional)</label>
+              <input id="consentExpires" type="date">
+            </div>
+            <div class="form-grid-full">
+              <label for="consentNotes">Notes</label>
+              <textarea id="consentNotes" rows="2" placeholder="Additional authorization details"></textarea>
+            </div>
+          </div>
+          <button class="btn" type="submit" style="margin-top:12px;">Record consent</button>
+        </form>
+
+        <h3 style="color:var(--gold-glow);margin-bottom:10px;">Consent history</h3>
+        <div id="consentList" style="overflow-x:auto;"><div class="loading">Loading consent records...</div></div>
+      </div>
+
+      <!-- Integrations Section -->
+      <div id="integrationsSection" class="section" style="display:none;">
+        <h2>Integrations &amp; API Keys</h2>
+        <p style="color:var(--muted);font-size:13px;margin:8px 0 20px;">Connect a payment provider for verified billing and issue scoped credentials to approved hospital systems.</p>
+        <div id="providerStatus" class="system-grid" style="margin-bottom:22px;"><div class="system-card"><strong>Loading providers</strong><span>Checking configuration...</span></div></div>
+        <div class="system-card" style="margin-bottom:22px;">
+          <h3 style="color:var(--gold-glow);margin-bottom:8px;">Create API key</h3>
+          <p style="color:var(--muted);font-size:12px;margin-bottom:14px;">Keys are shown once. Store them in the connected system's secret manager.</p>
+          <form onsubmit="createIntegrationKey(event)">
+            <div class="form-grid">
+              <div><label for="apiKeyName">Key name</label><input id="apiKeyName" maxlength="80" placeholder="Lab results gateway" required></div>
+              <div><label for="apiKeyScopes">Scopes</label><select id="apiKeyScopes" multiple><option value="records:read" selected>Records read</option><option value="records:write">Records write</option><option value="patients:read">Patients read</option></select></div>
+            </div>
+            <button class="btn" type="submit" style="margin-top:14px;">Create API key</button>
+          </form>
+        </div>
+        <div id="apiKeysList" style="overflow-x:auto;"><p style="color:var(--muted);">Loading API keys...</p></div>
+      </div>
+
+      <!-- Documentation Section -->
+      <div id="documentationSection" class="section" style="display:none;">
+        <h2>VaultWard Documentation</h2>
+        <p style="color:var(--muted);font-size:13px;margin:8px 0 0;">A practical guide to using VaultWard, understanding its protections, and knowing where each operation belongs.</p>
+        <nav class="documentation-nav" aria-label="Documentation sections">
+          <a href="#doc-start">Start here</a><a href="#doc-pages">Portal pages</a><a href="#doc-layers">System layers</a><a href="#doc-roles">Roles</a><a href="#doc-security">Security</a><a href="#doc-operations">Operations</a><a href="#doc-api">API map</a>
+        </nav>
+
+        <section id="doc-start" class="doc-section">
+          <h3>Start here</h3>
+          <div class="doc-grid">
+            <div class="doc-card"><h3>Everyday work</h3><p>Open Patients to search or create a patient, then open a patient record to review or update authorized clinical information.</p></div>
+            <div class="doc-card"><h3>Urgent access</h3><p>Use Break-glass only for a genuine emergency. Give a specific reason. The event is highlighted for security review.</p></div>
+            <div class="doc-card"><h3>Account safety</h3><p>Use My Profile to review your account and MFA. Sign out when finished, especially on shared workstations.</p></div>
+            <div class="doc-card"><h3>Need help?</h3><p>Administrators handle users, audit review, backups, retention, incidents, billing, and integrations. Ask an administrator rather than sharing credentials.</p></div>
+          </div>
+        </section>
+
+        <section id="doc-pages" class="doc-section">
+          <h3>Portal pages</h3>
+          <table class="doc-table"><thead><tr><th>Page</th><th>What it does</th><th>Typical owner</th></tr></thead><tbody>
+            <tr><td>Patients</td><td>Search patients, create patients, and open clinical records. Edits and removals depend on role.</td><td>All clinical staff</td></tr>
+            <tr><td>Audit Log</td><td>Review the tamper-evident history of security-sensitive actions. Administrators can verify the chain.</td><td>Administrators</td></tr>
+            <tr><td>System Info</td><td>Review application, database, encryption, and maintenance status.</td><td>Administrators</td></tr>
+            <tr><td>Team / User Management</td><td>Create users and manage roles, active status, and organization tier.</td><td>Administrators</td></tr>
+            <tr><td>Reports &amp; Analytics</td><td>View organization totals, record growth, tier distribution, and break-glass activity.</td><td>Administrators</td></tr>
+            <tr><td>System Resilience</td><td>Review health, scheduled maintenance, key rotation, and resilience indicators.</td><td>Administrators</td></tr>
+            <tr><td>Data Backup &amp; Recovery</td><td>Create encrypted backups, review available backups, and restore after approval and validation.</td><td>Administrators</td></tr>
+            <tr><td>Privacy &amp; Governance</td><td>Manage retention policy, exports, erasure requests, legal holds, and privacy incidents.</td><td>Staff and administrators</td></tr>
+            <tr><td>Patient Consent</td><td>Record and review consent associated with patient workflows.</td><td>Authorized staff</td></tr>
+            <tr><td>Security &amp; Activity</td><td>Review recent login, MFA, break-glass, and other security events.</td><td>All users; admin view is broader</td></tr>
+            <tr><td>My Profile &amp; Settings</td><td>Review your identity, role, tier, MFA state, and active sessions.</td><td>Every user</td></tr>
+            <tr><td>Billing &amp; Payment History</td><td>Compare tiers, review invoices and renewals, and begin a verified provider checkout.</td><td>Organization administrators</td></tr>
+            <tr><td>Integrations &amp; API Keys</td><td>Check Stripe/Paynow configuration and create or revoke scoped keys for approved systems.</td><td>Organization administrators</td></tr>
+            <tr><td>Documentation</td><td>Read this guide and understand the application layers, workflows, and API surface.</td><td>Everyone</td></tr>
+          </tbody></table>
+        </section>
+
+        <section id="doc-layers" class="doc-section">
+          <h3>System layers</h3>
+          <div class="doc-grid">
+            <div class="doc-card"><h3>Presentation layer</h3><p>The Flask templates and dashboard provide navigation, forms, status views, and accessible feedback. Browser state-changing requests include CSRF protection.</p></div>
+            <div class="doc-card"><h3>Identity layer</h3><p>Flask-Login manages sessions. Passwords are stored as Argon2 hashes. Optional TOTP MFA adds a second verification step and lockout controls protect repeated failures.</p></div>
+            <div class="doc-card"><h3>Authorization layer</h3><p>Roles control actions: administrators manage the platform, doctors can create clinical records and use break-glass, nurses and records officers have narrower workflows, and tier checks protect paid capabilities.</p></div>
+            <div class="doc-card"><h3>Clinical data layer</h3><p>Patients and medical records are persisted through SQLAlchemy. Sensitive record fields are encrypted before storage and decrypted only for an authorized request.</p></div>
+            <div class="doc-card"><h3>Cryptography layer</h3><p>Free uses AES-128-GCM. Pro and Enterprise use AES-256-GCM with versioned keys and scheduled rotation. Ciphertext retains its key version for controlled decryption.</p></div>
+            <div class="doc-card"><h3>Audit layer</h3><p>Important actions are written to a hash-chained audit log. Break-glass, authentication, user, privacy, billing, API-key, backup, and maintenance events are reviewable.</p></div>
+            <div class="doc-card"><h3>Resilience layer</h3><p>The maintenance scheduler creates encrypted .vwb SQLite backups and rotates Pro and Enterprise keys. Health checks report database, encryption, and maintenance status.</p></div>
+            <div class="doc-card"><h3>Integration layer</h3><p>Provider-issued payment references are verified server-side before paid tier changes. API keys are scoped, shown once, hashed at rest, and revocable.</p></div>
+          </div>
+        </section>
+
+        <section id="doc-roles" class="doc-section">
+          <h3>Roles and access</h3>
+          <table class="doc-table"><thead><tr><th>Role</th><th>Primary responsibilities</th></tr></thead><tbody>
+            <tr><td>Administrator</td><td>Users, audit, analytics, maintenance, backups, privacy decisions, incidents, billing, and integrations.</td></tr>
+            <tr><td>Doctor</td><td>Clinical records and emergency break-glass access with a documented reason.</td></tr>
+            <tr><td>Nurse</td><td>Authorized patient and record workflows according to assigned permissions.</td></tr>
+            <tr><td>Records officer</td><td>Authorized patient and records administration without doctor-only emergency actions.</td></tr>
+          </tbody></table>
+        </section>
+
+        <section id="doc-security" class="doc-section">
+          <h3>Security and privacy rules</h3>
+          <ul><li>Never share passwords, MFA codes, API keys, card details, or provider secrets.</li><li>Use the least-privileged role and API scope needed for the task.</li><li>Use break-glass only for a real emergency and write a precise reason.</li><li>Use encrypted backups and test restores in a disposable environment before relying on a recovery procedure.</li><li>Legal holds prevent eligible records from automated retention purge; privacy erasure decisions belong to authorized administrators.</li><li>Report suspected compromise through the incident workflow and preserve relevant audit evidence.</li></ul>
+        </section>
+
+        <section id="doc-operations" class="doc-section">
+          <h3>Operations checklist</h3>
+          <table class="doc-table"><thead><tr><th>Situation</th><th>Recommended action</th></tr></thead><tbody>
+            <tr><td>Daily start</td><td>Check System Resilience and Security &amp; Activity for degraded health or unusual events.</td></tr>
+            <tr><td>Before a release</td><td>Create an encrypted backup, confirm the health endpoint, and review pending maintenance.</td></tr>
+            <tr><td>Suspected breach</td><td>Preserve audit records, create an incident, restrict affected access, and follow INCIDENT_RESPONSE.md.</td></tr>
+            <tr><td>Data request</td><td>Use Privacy &amp; Governance, verify identity and legal basis, then record the decision or hold.</td></tr>
+            <tr><td>Connected system</td><td>Create one named API key with the smallest scopes, copy it once into the system secret manager, and revoke it when no longer needed.</td></tr>
+          </tbody></table>
+        </section>
+
+        <section id="doc-api" class="doc-section">
+          <h3>API map</h3>
+          <p>Authenticated API routes use the browser session and CSRF token for state changes. The complete request and response reference is maintained in <strong>API_REFERENCE.md</strong>.</p>
+          <div class="doc-grid">
+            <div class="doc-card"><h3>Auth</h3><p><code>/auth/login</code>, MFA setup and verification, profile, and logout.</p></div>
+            <div class="doc-card"><h3>Records</h3><p><code>/records/patients</code> and clinical record operations, including break-glass.</p></div>
+            <div class="doc-card"><h3>Governance</h3><p><code>/privacy</code>, consent, erasure, retention, legal holds, and incidents.</p></div>
+            <div class="doc-card"><h3>Platform</h3><p><code>/admin</code>, <code>/healthz</code>, <code>/subscriptions</code>, and <code>/integrations</code>.</p></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Subscription Section -->
+      <div id="subscriptionSection" class="section" style="display:none;">
+        <h2>Subscription Status</h2>
+        <div id="subscriptionDetails" style="margin-bottom: 20px;">
+          <!-- Loaded dynamically -->
+        </div>
+        <h2>Billing &amp; Payment History</h2>
+        <div id="billingSummary" class="system-grid" style="margin-bottom:18px;">
+          <div class="system-card"><strong>Next renewal</strong><span>Loading...</span></div>
+          <div class="system-card"><strong>Payment method</strong><span>Loading...</span></div>
+        </div>
+        <div id="billingHistory" style="overflow-x:auto; margin-bottom:28px;">
+          <p style="color:var(--muted);">Loading billing history...</p>
+        </div>
+        <h2>Available Tiers</h2>
+        <p style="color:var(--muted);font-size:13px;margin-top:8px;">All plans are billed per organization. Compare monthly and annual pricing before selecting a plan.</p>
+        <div class="tier-comparison-wrap">
+          <table class="tier-comparison" aria-label="Subscription tier pricing comparison">
+            <thead>
+              <tr>
+                <th>Plan</th>
+                <th>Monthly</th>
+                <th>Annual</th>
+                <th>Annual offer</th>
+                <th>Access</th>
+              </tr>
+            </thead>
+            <tbody id="tierComparisonBody"></tbody>
+          </table>
+        </div>
+        <div id="tiersList" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:20px; margin-top:15px;">
+          <!-- Loaded dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastContainer" aria-live="polite"></div>
+
+  <div id="auditDeleteModal" class="modal hidden">
+    <div class="modal-content" style="max-width:460px;">
+      <div class="modal-header">
+        <div>
+          <h3 style="margin:0;color:var(--gold-glow);">Remove Audit Log</h3>
+          <p style="margin-top:6px;color:var(--muted);font-size:13px;">Enter your admin password to permanently remove this entry.</p>
+        </div>
+        <button class="modal-close" onclick="closeAuditDeleteModal()">×</button>
+      </div>
+      <form onsubmit="submitAuditDelete(event)">
+        <label for="auditDeletePassword">Admin password</label>
+        <input type="password" id="auditDeletePassword" autocomplete="current-password" required>
+        <div style="display:flex;justify-content:flex-end;margin-top:16px;">
+          <button type="submit" class="btn btn-danger">Remove Log</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="subscriptionCheckoutModal" class="modal hidden">
+    <div class="modal-content" style="max-width:620px;">
+      <div class="modal-header">
+        <div>
+          <h3 id="checkoutTitle" style="margin:0;color:var(--teal-glow);">Complete organization details</h3>
+          <p id="checkoutSubtitle" style="margin-top:6px;color:var(--muted);font-size:13px;">Enter the details required to activate this plan.</p>
+        </div>
+        <button class="modal-close" type="button" onclick="closeCheckoutModal()" aria-label="Close payment form">×</button>
+      </div>
+      <div id="checkoutSummary" class="checkout-summary"></div>
+      <form id="subscriptionCheckoutForm" onsubmit="submitSubscriptionPayment(event)">
+        <div class="form-grid">
+          <div>
+            <label for="billingOrganization">Organization name</label>
+            <input id="billingOrganization" name="organization" type="text" autocomplete="organization" required>
+          </div>
+          <div>
+            <label for="billingContact">Billing contact</label>
+            <input id="billingContact" name="contact" type="text" autocomplete="name" required>
+          </div>
+          <div>
+            <label for="billingEmail">Billing email</label>
+            <input id="billingEmail" name="email" type="email" autocomplete="email" required>
+          </div>
+          <div>
+            <label for="billingPhone">Phone number</label>
+            <input id="billingPhone" name="phone" type="tel" autocomplete="tel" required>
+          </div>
+          <div class="form-grid-full">
+            <label for="billingAddress">Billing address</label>
+            <input id="billingAddress" name="address" type="text" autocomplete="street-address" required>
+          </div>
+          <div id="paymentFields" style="display:contents;">
+            <div><label for="paymentProvider">Payment provider</label><select id="paymentProvider" required><option value="stripe">Stripe</option><option value="paynow">Paynow</option></select></div>
+            <div><label for="paymentReference">Payment reference</label><input id="paymentReference" type="text" autocomplete="off" placeholder="Provider-issued payment ID" required></div>
+          </div>
+        </div>
+        <p id="paymentNote" class="payment-note">Complete payment with the selected provider, then enter its provider-issued reference. VaultWard never stores card details.</p>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;">
+          <button type="button" class="btn" style="background:rgba(255,255,255,0.08);" onclick="closeCheckoutModal()">Cancel</button>
+          <button type="submit" class="btn" id="checkoutSubmit">Activate plan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="adminTierCheckoutModal" class="modal hidden">
+    <div class="modal-content" style="max-width:560px;">
+      <div class="modal-header">
+        <div>
+          <h3 style="margin:0;color:var(--teal-glow);">Verify paid tier</h3>
+          <p id="adminTierCheckoutSubtitle" style="margin-top:6px;color:var(--muted);font-size:13px;">Complete payment with the provider, then enter its reference.</p>
+        </div>
+        <button class="modal-close" type="button" onclick="closeAdminTierCheckout()" aria-label="Close payment form">×</button>
+      </div>
+      <p id="adminTierCheckoutSummary" class="checkout-summary"></p>
+      <form onsubmit="submitAdminTierCheckout(event)">
+        <div class="form-grid">
+          <div>
+            <label for="adminBillingContact">Billing contact</label>
+            <input id="adminBillingContact" type="text" autocomplete="name" required>
+          </div>
+          <div>
+            <label for="adminBillingEmail">Billing email</label>
+            <input id="adminBillingEmail" type="email" autocomplete="email" required>
+          </div>
+          <div class="form-grid-full">
+            <label for="adminBillingAddress">Billing address</label>
+            <input id="adminBillingAddress" type="text" autocomplete="street-address" required>
+          </div>
+          <div>
+            <label for="adminTierProvider">Payment provider</label>
+            <select id="adminTierProvider" required><option value="stripe">Stripe</option><option value="paynow">Paynow</option></select>
+          </div>
+          <div>
+            <label for="adminTierBillingPeriod">Billing period</label>
+            <select id="adminTierBillingPeriod"><option value="monthly">Monthly</option><option value="annual">Annual</option></select>
+          </div>
+          <div>
+            <label for="adminTierPaymentReference">Provider payment reference</label>
+            <input id="adminTierPaymentReference" type="text" autocomplete="off" placeholder="pi_... or Paynow reference" required>
+          </div>
+        </div>
+        <p style="color:var(--muted);font-size:12px;margin-top:14px;">VaultWard verifies the payment with the provider. Card numbers and banking details must be entered only on the provider's secure checkout and are never stored here.</p>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;"><button type="button" class="btn" style="background:rgba(255,255,255,0.08);" onclick="closeAdminTierCheckout()">Cancel</button><button type="submit" class="btn" id="adminTierCheckoutSubmit">Verify payment and upgrade</button></div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const initialSection = document.body.dataset.initialSection || 'patients';
+    let currentUser = null;
+    let editingPatientId = null;
+    let pendingAuditDeleteId = null;
+    let pendingSubscription = null;
+    let pendingAdminTierUpgrade = null;
+
+    function csrfHeaders(headers = {}) {
+      return { ...headers, 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content };
+    }
+
+    function showToast(message, type = 'success') {
+      const toastContainer = document.getElementById('toastContainer');
+      const toastKey = `${type}:${message}`;
+      const existingToast = Array.from(toastContainer.children).find(toast => toast.dataset.toastKey === toastKey);
+      if (existingToast) {
+        existingToast.classList.remove('toast-refresh');
+        void existingToast.offsetWidth;
+        existingToast.classList.add('toast-refresh');
+        return;
+      }
+      const toast = document.createElement('div');
+      toast.className = `toast ${type === 'error' ? 'error' : ''}`;
+      toast.dataset.toastKey = toastKey;
+      toast.textContent = message;
+      toastContainer.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    async function checkAuth() {
+      try {
+        const [subscriptionRes, profileRes] = await Promise.all([
+          fetch('/subscriptions/me'),
+          fetch('/auth/profile')
+        ]);
+        if (!subscriptionRes.ok || !profileRes.ok) {
+          window.location.href = '/auth/login';
+          return;
+        }
+        const data = await subscriptionRes.json();
+        const profile = await profileRes.json();
+        currentUser = profile;
+        if (currentUser.role === 'admin') {
+          document.getElementById('adminMenu').style.display = 'block';
+          document.getElementById('backupAdminControls').style.display = 'block';
+        }
+
+        document.getElementById('userNameText').textContent = profile.username;
+        document.getElementById('userRoleBadge').textContent = currentUser.role.toUpperCase();
+        document.getElementById('userTierBadge').textContent = profile.tier.toUpperCase();
+        
+        fetchPatients();
+        fetchTiers();
+        fetchBillingHistory();
+        fetchIntegrations();
+        if (initialSection !== 'patients') showSection(initialSection);
+        if (currentUser?.role === 'admin') {
+          fetchTeamUsers();
+          fetchSecurityActivity();
+          if (initialSection === 'analytics') fetchAnalytics();
+        }
+      } catch (err) {
+        window.location.href = '/auth/login';
+      }
+    }
+
+    async function logout() {
+      await fetch('/auth/logout', { method: 'POST', headers: csrfHeaders() });
+      window.location.href = '/auth/login';
+    }
+
+    async function fetchPatients() {
+      const q = document.getElementById('patientSearch').value;
+      const res = await fetch(`/records/patients?q=${encodeURIComponent(q)}`);
+      if (res.ok) {
+        const data = await res.json();
+        let html = `<table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Patient ID</th>
+              <th>Full Name</th>
+              <th>DOB</th>
+              <th>Gender</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>`;
+        if (data.patients.length === 0) {
+          html += `<tr><td colspan="5" style="text-align:center; color:var(--muted);">No patients found.</td></tr>`;
+        } else {
+          data.patients.forEach(p => {
+            html += `<tr>
+              <td>${p.id}</td>
+              <td>${p.patient_id || 'N/A'}</td>
+              <td>${p.full_name}</td>
+              <td>${p.date_of_birth}</td>
+              <td>${p.gender || 'N/A'}</td>
+              <td>
+                <button class="btn btn-small" onclick="viewPatient(${p.id})">View</button>
+                ${currentUser?.role === 'admin' ? `<button class="btn btn-small" onclick="editPatient(${p.id})">Edit</button><button class="btn btn-small btn-danger" onclick="removePatient(${p.id}, '${String(p.full_name).replace(/'/g, "\\'")}')">Remove</button>` : ''}
+              </td>
+            </tr>`;
+          });
+        }
+        html += `</tbody></table>`;
+        document.getElementById('patientsList').innerHTML = html;
+      }
+    }
+
+    async function fetchTiers() {
+      const res = await fetch('/subscriptions/tiers');
+      if (res.ok) {
+        const tiers = await res.json();
+        let html = '';
+        let comparisonHtml = '';
+        for (const [key, value] of Object.entries(tiers)) {
+          const monthlyPrice = Number(value.monthly_price_usd || 0).toFixed(2);
+          const annualPrice = Number(value.annual_price_usd || 0).toFixed(2);
+          const annualSavings = `${value.annual_discount_percent}% discount${value.annual_free_months ? ` + ${value.annual_free_months} months free` : ''}`;
+          comparisonHtml += `<tr>
+            <th scope="row">${value.label}<span class="price-note">${value.algorithm}</span></th>
+            <td><span class="price-line">$${monthlyPrice}</span><span class="price-note">per month</span></td>
+            <td><span class="price-line">$${annualPrice}</span><span class="price-note">per year</span></td>
+            <td>${annualSavings}</td>
+            <td>${value.limited_access ? 'Limited access' : 'Full access'}</td>
+          </tr>`;
+          html += `<div style="background:rgba(255,255,255,0.02); border:1px solid rgba(31,217,176,0.15); border-radius:10px; padding:16px; display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <h3 style="color:var(--gold); margin-bottom:10px;">${value.label}</h3>
+              <p style="font-size:12px; color:var(--muted); margin-bottom:10px;">Billed per organization</p>
+              <p style="font-size:13px; color:var(--muted); margin-bottom:12px;">Algorithm: ${value.algorithm}</p>
+              <p style="font-size:12px; margin-bottom:10px;">Key Rotation: ${value.key_rotation ? value.key_rotation + ' days' : 'None'}</p>
+              <p style="font-size:12px; margin-bottom:10px;">Audit Chain: ${value.audit_chain ? 'Yes' : 'No'}</p>
+              ${value.limited_access ? '<p style="font-size:12px; margin-bottom:10px;">Limited access</p>' : ''}
+            </div>
+            <div style="margin-top:15px;">
+              <div style="font-size:18px; font-weight:bold; margin-bottom:6px;">$${monthlyPrice} <span style="font-size:11px; color:var(--muted);">/ month</span></div>
+              <div style="font-size:14px; margin-bottom:4px;">$${annualPrice} <span style="font-size:11px; color:var(--muted);">/ year</span></div>
+              <div style="font-size:11px; color:var(--muted); margin-bottom:10px;">${annualSavings}</div>
+              <button class="btn" style="width:100%;" onclick="upgradeTier('${key}', 'monthly')">Select monthly</button>
+              <button class="btn" style="width:100%; margin-top:6px;" onclick="upgradeTier('${key}', 'annual')">Select annual</button>
+            </div>
+          </div>`;
+        }
+        document.getElementById('tierComparisonBody').innerHTML = comparisonHtml;
+        document.getElementById('tiersList').innerHTML = html;
+      }
+    }
+
+    async function fetchBillingHistory() {
+      const res = await fetch('/subscriptions/billing-history');
+      if (!res.ok) return;
+      const data = await res.json();
+      const renewal = data.next_renewal ? new Date(data.next_renewal).toLocaleDateString() : 'No scheduled renewal';
+      document.getElementById('billingSummary').innerHTML = `
+        <div class="system-card"><strong>Next renewal</strong><span>${renewal}</span></div>
+        <div class="system-card"><strong>Payment method</strong><span>${data.payment_method || 'No payment method on file'}</span></div>`;
+      const rows = (data.history || []).map(item => `<tr>
+        <td>${item.invoice_number}</td>
+        <td>${item.tier_label}</td>
+        <td>${item.billing_period}</td>
+        <td>${item.currency} ${Number(item.amount || 0).toFixed(2)}</td>
+        <td>${item.payment_status}</td>
+        <td>${item.paid_at ? new Date(item.paid_at).toLocaleDateString() : 'Not available'}</td>
+        <td>${item.renewal_date ? new Date(item.renewal_date).toLocaleDateString() : 'No renewal'}</td>
+      </tr>`).join('');
+      document.getElementById('billingHistory').innerHTML = rows ? `<table aria-label="Billing and payment history">
+        <thead><tr><th>Invoice</th><th>Plan</th><th>Period</th><th>Amount</th><th>Status</th><th>Paid</th><th>Renewal</th></tr></thead>
+        <tbody>${rows}</tbody></table>` : '<p style="color:var(--muted);">No billing activity yet.</p>';
+    }
+
+    async function fetchIntegrations() {
+      const res = await fetch('/integrations');
+      if (!res.ok) return;
+      const data = await res.json();
+      document.getElementById('providerStatus').innerHTML = Object.entries(data.providers || {}).map(([name, provider]) => `
+        <div class="system-card"><strong>${name.toUpperCase()}</strong><span>${provider.configured ? `Configured (${provider.mode})` : 'Not configured'}</span></div>
+      `).join('');
+      const keys = data.api_keys || [];
+      document.getElementById('apiKeysList').innerHTML = keys.length ? `<table aria-label="API keys"><thead><tr><th>Name</th><th>Prefix</th><th>Scopes</th><th>Created</th><th>Status</th><th>Action</th></tr></thead><tbody>${keys.map(key => `<tr>
+        <td>${key.name}</td><td>${key.key_prefix}...</td><td>${key.scopes.join(', ')}</td><td>${new Date(key.created_at).toLocaleDateString()}</td><td>${key.active ? 'Active' : 'Revoked'}</td>
+        <td>${key.active ? `<button class="btn btn-small btn-danger" onclick="revokeIntegrationKey(${key.id})">Revoke</button>` : ''}</td>
+      </tr>`).join('')}</tbody></table>` : '<p style="color:var(--muted);">No API keys have been created.</p>';
+    }
+
+    async function createIntegrationKey(event) {
+      event.preventDefault();
+      const scopes = Array.from(document.getElementById('apiKeyScopes').selectedOptions).map(option => option.value);
+      const res = await fetch('/integrations/api-keys', {
+        method: 'POST', headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ name: document.getElementById('apiKeyName').value, scopes })
+      });
+      const data = await res.json();
+      if (!res.ok) return showToast(data.error || 'Unable to create API key.', 'error');
+      window.prompt('Copy this API key. It will not be shown again.', data.key);
+      document.getElementById('apiKeyName').value = '';
+      await fetchIntegrations();
+      showToast('API key created.');
+    }
+
+    async function revokeIntegrationKey(keyId) {
+      const res = await fetch(`/integrations/api-keys/${keyId}/revoke`, { method: 'POST', headers: csrfHeaders() });
+      const data = await res.json();
+      if (!res.ok) return showToast(data.error || 'Unable to revoke API key.', 'error');
+      await fetchIntegrations();
+      showToast(data.message || 'API key revoked.');
+    }
+
+    async function fetchAnalytics() {
+      if (currentUser?.role !== 'admin') {
+        document.getElementById('analyticsSummary').innerHTML = '<p class="muted-message">Reports &amp; Analytics is available to administrators.</p>';
+        document.getElementById('tierBars').innerHTML = '<p class="muted-message">Administrator access required.</p>';
+        return;
+      }
+      const res = await fetch('/admin/stats');
+      if (!res.ok) {
+        document.getElementById('analyticsSummary').innerHTML = '<p class="muted-message">Unable to load reports.</p>';
+        return;
+      }
+      const stats = await res.json();
+      document.getElementById('analyticsSummary').innerHTML = [
+        ['Total users', stats.total_users],
+        ['Patients', stats.total_patients],
+        ['Medical records', stats.total_records],
+        ['Break-glass events', stats.break_glass_events],
+      ].map(([label, value]) => `<div class="analytics-stat"><strong>${label}</strong><span>${Number(value || 0).toLocaleString()}</span></div>`).join('');
+
+      const tiers = Object.entries(stats.users_by_tier || {});
+      const maxTierCount = Math.max(...tiers.map(([, count]) => Number(count) || 0), 1);
+      document.getElementById('tierBars').innerHTML = tiers.map(([tier, count]) => `
+        <div class="tier-bar-row"><span>${tier.toUpperCase()}</span><div class="tier-bar-track"><div class="tier-bar-fill" style="width:${(Number(count || 0) / maxTierCount) * 100}%"></div></div><strong>${count}</strong></div>
+      `).join('') || '<p class="muted-message">No tier data available.</p>';
+      drawTrendChart('recordGrowthChart', stats.record_growth || [], '#1fd9b0');
+      drawTrendChart('breakGlassChart', stats.break_glass_trends || [], '#f4c542');
+    }
+
+    function drawTrendChart(canvasId, points, color) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const ratio = window.devicePixelRatio || 1;
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      canvas.width = width * ratio;
+      canvas.height = height * ratio;
+      const context = canvas.getContext('2d');
+      context.scale(ratio, ratio);
+      const padding = { top: 16, right: 12, bottom: 28, left: 30 };
+      const chartWidth = width - padding.left - padding.right;
+      const chartHeight = height - padding.top - padding.bottom;
+      const values = points.map(point => Number(point.count) || 0);
+      const maxValue = Math.max(...values, 1);
+      const x = index => padding.left + (values.length > 1 ? index * chartWidth / (values.length - 1) : chartWidth / 2);
+      const y = value => padding.top + chartHeight - (value / maxValue) * chartHeight;
+      context.font = '11px Segoe UI';
+      context.strokeStyle = 'rgba(159,201,191,0.18)';
+      context.fillStyle = '#9fc9bf';
+      context.lineWidth = 1;
+      [0, 0.5, 1].forEach(step => {
+        const lineY = y(maxValue * step);
+        context.beginPath(); context.moveTo(padding.left, lineY); context.lineTo(width - padding.right, lineY); context.stroke();
+        context.fillText(String(Math.round(maxValue * step)), 4, lineY + 4);
+      });
+      if (!values.length) return;
+      context.strokeStyle = color;
+      context.lineWidth = 2.5;
+      context.beginPath();
+      values.forEach((value, index) => index ? context.lineTo(x(index), y(value)) : context.moveTo(x(index), y(value)));
+      context.stroke();
+      context.fillStyle = color;
+      values.forEach((value, index) => { context.beginPath(); context.arc(x(index), y(value), 3, 0, Math.PI * 2); context.fill(); });
+      context.fillStyle = '#9fc9bf';
+      context.fillText(points[0].date.slice(5), padding.left, height - 7);
+      context.fillText(points[points.length - 1].date.slice(5), width - padding.right - 34, height - 7);
+    }
+
+    async function upgradeTier(tier, billingPeriod) {
+      const tiersResponse = await fetch('/subscriptions/tiers');
+      const tiers = tiersResponse.ok ? await tiersResponse.json() : {};
+      pendingSubscription = { tier, billingPeriod, info: tiers[tier] };
+      const info = pendingSubscription.info || {};
+      const isFree = tier === 'free';
+      const price = billingPeriod === 'annual' ? info.annual_price_usd : info.monthly_price_usd;
+      const period = billingPeriod === 'annual' ? 'year' : 'month';
+      document.getElementById('checkoutTitle').textContent = isFree ? 'Set up your Free organization plan' : 'Complete organization payment';
+      document.getElementById('checkoutSubtitle').textContent = isFree ? 'Tell us who this Free plan belongs to. No financial details are needed.' : 'Enter the personal, organization, and payment details required to activate this plan.';
+      document.getElementById('checkoutSummary').innerHTML = `<strong>${info.label || tier.toUpperCase()} plan</strong><br>$${Number(price || 0).toFixed(2)} per organization / ${period}${isFree ? ' &mdash; No payment required' : billingPeriod === 'annual' ? ` &mdash; ${info.annual_discount_percent}% discount + ${info.annual_free_months} months free` : ''}`;
+      document.getElementById('paymentFields').style.display = isFree ? 'none' : 'contents';
+      document.querySelectorAll('#paymentFields input').forEach(input => { input.required = !isFree; });
+      document.getElementById('paymentNote').textContent = isFree ? 'The Free plan has limited access and costs $0.00. Your organization details are used only to set up the account.' : 'Complete payment with the selected provider, then enter its provider-issued reference. VaultWard never stores card details.';
+      document.getElementById('checkoutSubmit').textContent = isFree ? 'Activate Free plan' : 'Pay and activate';
+      document.getElementById('subscriptionCheckoutForm').reset();
+      document.getElementById('subscriptionCheckoutModal').classList.remove('hidden');
+    }
+
+    function closeCheckoutModal() {
+      pendingSubscription = null;
+      document.getElementById('subscriptionCheckoutForm').reset();
+      document.getElementById('subscriptionCheckoutModal').classList.add('hidden');
+    }
+
+    async function submitSubscriptionPayment(event) {
+      event.preventDefault();
+      if (!pendingSubscription) return;
+
+      const submitButton = document.getElementById('checkoutSubmit');
+      submitButton.disabled = true;
+      submitButton.textContent = 'Processing...';
+      const { tier, billingPeriod } = pendingSubscription;
+      const endpoint = tier === 'free' ? '/subscriptions/cancel' : '/subscriptions/upgrade';
+      const options = tier === 'free' ? {
+        method: 'POST',
+        headers: csrfHeaders()
+      } : {
+        method: 'POST',
+        headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ tier, billing_period: billingPeriod, provider: document.getElementById('paymentProvider').value, payment_reference: document.getElementById('paymentReference').value.trim() })
+      };
+      const res = await fetch(endpoint, options);
+      if (res.ok) {
+        closeCheckoutModal();
+        showToast(tier === 'free' ? 'Free plan activated successfully.' : `Upgraded to ${tier.toUpperCase()} tier successfully!`);
+        location.reload();
+      } else {
+        const data = await res.json();
+        showToast(data.error || 'Upgrade failed.', 'error');
+      }
+      submitButton.disabled = false;
+      submitButton.textContent = tier === 'free' ? 'Activate Free plan' : 'Pay and activate';
+    }
+
+    function showSection(sectionId) {
+      document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+      document.getElementById(`${sectionId}Section`).style.display = 'block';
+      document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+      if (event?.target?.closest) event.target.closest('.menu-item')?.classList.add('active');
+
+      if (sectionId === 'security') {
+        fetchSecurityActivity();
+      }
+      if (sectionId === 'audit') {
+        fetchAudit();
+      }
+      if (sectionId === 'system') {
+        fetchSystemInfo();
+      }
+      if (sectionId === 'analytics') {
+        fetchAnalytics();
+      }
+      if (sectionId === 'resilience') {
+        fetchResilienceHealth();
+        loadAvailableBackupFilenames();
+      }
+      if (sectionId === 'backups') {
+        fetchBackups();
+      }
+      if (sectionId === 'privacy') {
+        fetchPrivacyGovernance();
+      }
+      if (sectionId === 'consent') {
+        fetchConsents();
+      }
+      if (sectionId === 'profile') {
+        fetchProfile();
+      }
+      if (sectionId === 'integrations') {
+        fetchIntegrations();
+      }
+    }
+
+    async function fetchConsentPatients() {
+      const response = await fetch('/records/patients');
+      if (!response.ok) return;
+      const data = await response.json();
+      const select = document.getElementById('consentPatient');
+      select.innerHTML = '<option value="">Select a patient</option>' + (data.patients || []).map(patient =>
+        `<option value="${patient.id}">${escapeHtml(patient.patient_id)} - ${escapeHtml(patient.full_name)}</option>`
+      ).join('');
+    }
+
+    async function fetchConsents() {
+      fetchConsentPatients();
+      const response = await fetch('/privacy/consents');
+      if (!response.ok) {
+        document.getElementById('consentList').innerHTML = '<p class="muted-message">Unable to load consent records.</p>';
+        return;
+      }
+      const consents = await response.json();
+      document.getElementById('consentList').innerHTML = consents.length ? `<table>
+        <thead><tr><th>Patient</th><th>Status</th><th>Purpose</th><th>Authorized by</th><th>Granted</th><th>Expires</th><th>Action</th></tr></thead>
+        <tbody>${consents.map(consent => {
+          const expired = consent.status === 'active' && consent.expires_at && new Date(consent.expires_at) < new Date();
+          const status = expired ? 'expired' : consent.status;
+          return `<tr>
+            <td>${escapeHtml(consent.patient_code)}<br><span style="color:var(--muted);font-size:12px;">${escapeHtml(consent.patient_name)}</span></td>
+            <td><span class="badge ${status === 'active' ? '' : 'gold'}">${status.toUpperCase()}</span></td>
+            <td>${escapeHtml(consent.purpose)}${consent.notes ? `<br><span style="color:var(--muted);font-size:12px;">${escapeHtml(consent.notes)}</span>` : ''}</td>
+            <td>${escapeHtml(consent.authorized_by)}</td>
+            <td>${escapeHtml(new Date(consent.granted_at).toLocaleString())}</td>
+            <td>${consent.expires_at ? escapeHtml(new Date(consent.expires_at).toLocaleDateString()) : 'No expiry'}</td>
+            <td>${consent.status === 'active' && !expired ? `<button class="btn btn-small btn-danger" onclick="revokeConsent(${consent.id})">Revoke</button>` : consent.revoked_by ? `<span style="color:var(--muted);font-size:12px;">By ${escapeHtml(consent.revoked_by)}</span>` : 'Expired'}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>` : '<p class="muted-message">No consent records have been recorded.</p>';
+    }
+
+    async function grantConsent(event) {
+      event.preventDefault();
+      const payload = {
+        patient_id: document.getElementById('consentPatient').value,
+        purpose: document.getElementById('consentPurpose').value.trim(),
+        expires_at: document.getElementById('consentExpires').value || null,
+        notes: document.getElementById('consentNotes').value.trim()
+      };
+      const response = await fetch('/privacy/consents', {
+        method: 'POST',
+        headers: csrfHeaders({'Content-Type': 'application/json'}),
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      if (!response.ok) return showToast(data.error || 'Unable to record consent.', 'error');
+      event.target.reset();
+      showToast(data.message);
+      fetchConsents();
+    }
+
+    async function revokeConsent(consentId) {
+      const reason = prompt('Why is this patient consent being revoked?');
+      if (!reason || !reason.trim()) return;
+      const response = await fetch(`/privacy/consents/${consentId}/revoke`, {
+        method: 'POST',
+        headers: csrfHeaders({'Content-Type': 'application/json'}),
+        body: JSON.stringify({reason: reason.trim()})
+      });
+      const data = await response.json();
+      if (!response.ok) return showToast(data.error || 'Unable to revoke consent.', 'error');
+      showToast(data.message);
+      fetchConsents();
+    }
+
+    async function fetchProfile() {
+      const res = await fetch('/auth/profile');
+      if (!res.ok) return;
+      const profile = await res.json();
+      currentUser = profile;
+      document.getElementById('profileDetails').innerHTML = [
+        ['Username', profile.username],
+        ['Email', profile.email],
+        ['Role', profile.role.replace('_', ' ')],
+        ['Department', profile.department || 'Not assigned'],
+        ['Subscription tier', profile.tier.toUpperCase()]
+      ].map(([label, value]) => `<div class="profile-value"><span>${escapeHtml(label)}</span><span>${escapeHtml(value)}</span></div>`).join('');
+      document.getElementById('profileDevices').innerHTML = profile.devices.length ? profile.devices.map(device => `
+        <div class="device-item"><strong>${escapeHtml(device.user_agent)}</strong><span>${escapeHtml(device.ip_address || 'Unknown IP')} · ${escapeHtml(new Date(device.timestamp).toLocaleString())}</span></div>
+      `).join('') : '<p style="color:var(--muted);">No device sign-ins recorded yet.</p>';
+      renderMfaStatus(profile.mfa_enabled);
+    }
+
+    function renderMfaStatus(enabled) {
+      document.getElementById('mfaStatus').innerHTML = `<div class="mfa-status"><span>Status</span><strong class="${enabled ? 'status-on' : 'status-off'}">${enabled ? 'Enabled' : 'Not enabled'}</strong></div>`;
+      document.getElementById('startMfaButton').classList.toggle('hidden', enabled);
+      document.getElementById('mfaDisable').classList.toggle('hidden', !enabled);
+      if (enabled) document.getElementById('mfaSetup').classList.add('hidden');
+    }
+
+    async function startMfaSetup() {
+      const res = await fetch('/auth/mfa-setup');
+      const data = await res.json();
+      if (!res.ok) return showToast(data.error || 'Unable to start MFA setup.', 'error');
+      document.getElementById('mfaSetup').classList.remove('hidden');
+      document.getElementById('mfaSecret').textContent = data.secret;
+      const qrCode = document.getElementById('mfaQrCode');
+      if (data.qr_svg) {
+        qrCode.src = `data:image/svg+xml,${encodeURIComponent(data.qr_svg)}`;
+        qrCode.classList.remove('hidden');
+      } else {
+        qrCode.classList.add('hidden');
+      }
+      document.getElementById('startMfaButton').classList.add('hidden');
+      document.getElementById('mfaSetupCode').focus();
+    }
+
+    async function confirmMfa(event) {
+      event.preventDefault();
+      const res = await fetch('/auth/mfa-setup', { method:'POST', headers:csrfHeaders({'Content-Type':'application/json'}), body:JSON.stringify({ code:document.getElementById('mfaSetupCode').value.trim() }) });
+      const data = await res.json();
+      if (!res.ok) return showToast(data.error || 'Unable to enable MFA.', 'error');
+      showToast(data.message);
+      document.getElementById('mfaSetupCode').value = '';
+      fetchProfile();
+    }
+
+    async function disableMfa(event) {
+      event.preventDefault();
+      const res = await fetch('/auth/mfa-disable', { method:'POST', headers:csrfHeaders({'Content-Type':'application/json'}), body:JSON.stringify({ password:document.getElementById('mfaDisablePassword').value, code:document.getElementById('mfaDisableCode').value.trim() }) });
+      const data = await res.json();
+      if (!res.ok) return showToast(data.error || 'Unable to disable MFA.', 'error');
+      event.target.reset();
+      showToast(data.message);
+      fetchProfile();
+    }
+
+    async function changePassword(event) {
+      event.preventDefault();
+      const newPassword = document.getElementById('profileNewPassword').value;
+      if (newPassword !== document.getElementById('profileConfirmPassword').value) {
+        return showToast('New password confirmation does not match.', 'error');
+      }
+      const res = await fetch('/auth/change-password', { method:'POST', headers:csrfHeaders({'Content-Type':'application/json'}), body:JSON.stringify({ current_password:document.getElementById('profileCurrentPassword').value, new_password:newPassword }) });
+      const data = await res.json();
+      if (!res.ok) return showToast(data.error || 'Unable to change password.', 'error');
+      event.target.reset();
+      showToast(data.message);
+    }
+
+    async function fetchTeamUsers() {
+      if (currentUser?.role !== 'admin') return;
+      const res = await fetch('/admin/users');
+      if (!res.ok) {
+        showToast('Unable to load team users.', 'error');
+        return;
+      }
+      const users = await res.json();
+      document.getElementById('teamUsersList').innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Department</th>
+              <th>Tier</th>
+              <th>Active</th>
+              <th>MFA</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${users.map(user => `
+              <tr>
+                <td>${user.id}</td>
+                <td>${user.username}</td>
+                <td>${user.email}</td>
+                <td>
+                  <select onchange="updateTeamUser(${user.id}, 'role', this.value)">
+                    <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
+                    <option value="doctor" ${user.role === 'doctor' ? 'selected' : ''}>Doctor</option>
+                    <option value="nurse" ${user.role === 'nurse' ? 'selected' : ''}>Nurse</option>
+                    <option value="records_officer" ${user.role === 'records_officer' ? 'selected' : ''}>Records Officer</option>
+                  </select>
+                </td>
+                <td><input type="text" value="${user.department || ''}" onchange="updateTeamUser(${user.id}, 'department', this.value)" style="min-width:120px;" /></td>
+                <td>
+                  <select onchange="requestTeamTierChange(${user.id}, this, '${user.tier}')">
+                    <option value="free" ${user.tier === 'free' ? 'selected' : ''}>Free</option>
+                    <option value="pro" ${user.tier === 'pro' ? 'selected' : ''}>Pro</option>
+                    <option value="enterprise" ${user.tier === 'enterprise' ? 'selected' : ''}>Enterprise</option>
+                  </select>
+                </td>
+                <td>
+                  <select onchange="updateTeamUser(${user.id}, 'is_active', this.value)">
+                    <option value="true" ${user.is_active ? 'selected' : ''}>Active</option>
+                    <option value="false" ${!user.is_active ? 'selected' : ''}>Inactive</option>
+                  </select>
+                </td>
+                <td>
+                  <select onchange="updateTeamUser(${user.id}, 'mfa_enabled', this.value)">
+                    <option value="true" ${user.mfa_enabled ? 'selected' : ''}>On</option>
+                    <option value="false" ${!user.mfa_enabled ? 'selected' : ''}>Off</option>
+                  </select>
+                </td>
+                <td><button class="btn btn-small btn-danger" onclick="deleteTeamUser(${user.id})">Remove</button></td>
+              </tr>
+            `).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--muted);">No team members found.</td></tr>'}
+          </tbody>
+        </table>
+      `;
+    }
+
+    async function updateTeamUser(userId, field, value) {
+      const payload = {};
+      if (field === 'is_active' || field === 'mfa_enabled') {
+        payload[field] = value === 'true';
+      } else {
+        payload[field] = value;
+      }
+      const res = await fetch(`/admin/users/${userId}`, {
+        method: 'PUT',
+        headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || 'User update failed.', 'error');
+        return;
+      }
+      showToast('User updated successfully.');
+      fetchTeamUsers();
+    }
+
+    function requestTeamTierChange(userId, select, previousTier) {
+      if (select.value === previousTier) return;
+      const requestedTier = select.value;
+      select.value = previousTier;
+      if (requestedTier === 'free') {
+        showToast('Paid tiers cannot be downgraded from this control. Use Billing & Payment History.', 'error');
+        return;
+      }
+      openAdminTierCheckout(userId, requestedTier, `Upgrade this user to ${requestedTier.toUpperCase()}.`);
+    }
+
+    function openAdminTierCheckout(userId, tier, subtitle) {
+      pendingAdminTierUpgrade = { userId, tier, billingPeriod: 'monthly' };
+      document.getElementById('adminTierCheckoutSubtitle').textContent = subtitle || 'Complete payment with the provider, then enter its reference.';
+      document.getElementById('adminTierCheckoutSummary').textContent = `${tier.toUpperCase()} plan, billed monthly. Payment is required before access changes.`;
+      document.getElementById('adminTierPaymentReference').value = '';
+      document.getElementById('adminTierBillingPeriod').value = 'monthly';
+      document.getElementById('adminTierCheckoutModal').classList.remove('hidden');
+      document.getElementById('adminTierPaymentReference').focus();
+    }
+
+    function closeAdminTierCheckout() {
+      pendingAdminTierUpgrade = null;
+      document.getElementById('adminTierCheckoutModal').classList.add('hidden');
+    }
+
+    async function submitAdminTierCheckout(event) {
+      event.preventDefault();
+      if (!pendingAdminTierUpgrade) return;
+      const button = document.getElementById('adminTierCheckoutSubmit');
+      button.disabled = true;
+      button.textContent = 'Verifying...';
+      try {
+        const res = await fetch(`/admin/users/${pendingAdminTierUpgrade.userId}/tier`, {
+          method: 'POST',
+          headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({
+            tier: pendingAdminTierUpgrade.tier,
+            billing_period: document.getElementById('adminTierBillingPeriod').value,
+            provider: document.getElementById('adminTierProvider').value,
+            payment_reference: document.getElementById('adminTierPaymentReference').value.trim()
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showToast(data.error || 'Payment could not be verified.', 'error');
+          return;
+        }
+        closeAdminTierCheckout();
+        showToast(data.message || 'User tier upgraded successfully.');
+        fetchTeamUsers();
+      } finally {
+        button.disabled = false;
+        button.textContent = 'Verify payment and upgrade';
+      }
+    }
+
+    async function submitTeamUserForm(event) {
+      event.preventDefault();
+      const payload = {
+        username: document.getElementById('teamUsername').value.trim(),
+        email: document.getElementById('teamEmail').value.trim(),
+        password: document.getElementById('teamPassword').value,
+        role: document.getElementById('teamRole').value,
+        department: document.getElementById('teamDepartment').value.trim(),
+        tier: 'free',
+        requested_tier: document.getElementById('teamTier').value
+      };
+
+      const res = await fetch('/admin/users', {
+        method: 'POST',
+        headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || 'User creation failed.', 'error');
+        return;
+      }
+      event.target.reset();
+      showToast(data.requested_tier && data.requested_tier !== 'free' ? 'User saved on Free tier. Payment is required before paid access.' : 'User created successfully.');
+      fetchTeamUsers();
+      if (data.requested_tier && data.requested_tier !== 'free') {
+        openAdminTierCheckout(data.user_id, data.requested_tier, data.message);
+      }
+    }
+
+    async function deleteTeamUser(userId) {
+      if (!confirm('Remove this user from VaultWard?')) return;
+      try {
+        const res = await fetch(`/admin/users/${userId}`, {
+          method: 'DELETE',
+          headers: csrfHeaders()
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showToast(data.error || 'User removal failed.', 'error');
+          return;
+        }
+        showToast('User removed.');
+        fetchTeamUsers();
+      } catch (err) {
+        showToast('Unable to remove user.', 'error');
+      }
+    }
+
+    async function fetchResilienceHealth() {
+      const res = await fetch('/healthz');
+      const data = await res.json();
+      const healthy = data.status === 'ok';
+      const checks = Object.entries(data.checks || {}).map(([name, status]) => `
+        <div class="system-card"><strong>${name}</strong><span style="color:${status === 'ok' ? 'var(--teal-glow)' : 'var(--gold-glow)'};">${status}</span></div>`).join('');
+      document.getElementById('healthStatus').innerHTML = `
+        <div class="system-card"><strong>Overall status</strong><span style="color:${healthy ? 'var(--teal-glow)' : 'var(--gold-glow)'};">${data.status}</span></div>
+        ${checks}
+        <div class="system-card"><strong>Last checked</strong><span style="font-size:13px;">${data.timestamp}</span></div>`;
+    }
+
+    async function fetchBackups() {
+      const response = await fetch('/admin/maintenance/backups');
+      if (!response.ok) {
+        document.getElementById('backupSummary').innerHTML = '<p class="muted-message">Unable to load backup status.</p>';
+        return;
+      }
+      const data = await response.json();
+      const lastBackup = data.last_backup;
+      const formatDate = value => value ? new Date(value).toLocaleString() : 'No backup found';
+      const formatSize = bytes => bytes ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : '0 MB';
+      document.getElementById('backupSummary').innerHTML = `
+        <div class="backup-stat"><strong>Last backup</strong><span>${formatDate(lastBackup?.created_at)}</span></div>
+        <div class="backup-stat"><strong>Backup count</strong><span>${data.backups.length}</span></div>
+        <div class="backup-stat"><strong>Latest snapshot</strong><span>${lastBackup ? escapeHtml(lastBackup.filename) : 'None available'}</span></div>
+        <div class="backup-stat"><strong>Latest size</strong><span>${formatSize(lastBackup?.size_bytes)}</span></div>`;
+      document.getElementById('backupHistory').innerHTML = data.backups.length ? `<table>
+        <thead><tr><th>Filename</th><th>Created</th><th>Size</th><th>Recovery action</th></tr></thead>
+        <tbody>${data.backups.map(backup => `<tr>
+          <td>${escapeHtml(backup.filename)}</td>
+          <td>${escapeHtml(formatDate(backup.created_at))}</td>
+          <td>${formatSize(backup.size_bytes)}</td>
+          <td>${currentUser?.role === 'admin' ? `<button class="btn btn-small" onclick="selectBackupForRestore('${escapeHtml(backup.filename)}')">Use for restore</button>` : 'Administrator only'}</td>
+        </tr>`).join('')}</tbody>
+      </table>` : '<p class="muted-message">No encrypted backups are available yet.</p>';
+    }
+
+    function selectBackupForRestore(filename) {
+      document.getElementById('backupPageRestoreFilename').value = filename;
+      document.getElementById('backupPageRestoreFilename').focus();
+    }
+
+    async function createEncryptedBackupFromPage() {
+      const result = document.getElementById('backupPageResult');
+      result.textContent = 'Creating encrypted backup...';
+      const response = await fetch('/admin/maintenance/backup', { method: 'POST', headers: csrfHeaders() });
+      const data = await response.json();
+      result.textContent = response.ok ? `Created: ${data.filename}` : (data.error || 'Backup creation failed.');
+      result.style.color = response.ok ? 'var(--teal-glow)' : '#ff8888';
+      if (response.ok) fetchBackups();
+    }
+
+    async function restoreEncryptedBackupFromPage() {
+      const filename = document.getElementById('backupPageRestoreFilename').value.trim();
+      if (!filename) return showToast('Select or enter a backup filename.', 'error');
+      if (!confirm('Restoring replaces the active database. Continue only with an approved and tested backup?')) return;
+      const response = await fetch('/admin/maintenance/restore', {
+        method: 'POST',
+        headers: csrfHeaders({'Content-Type': 'application/json'}),
+        body: JSON.stringify({filename})
+      });
+      const data = await response.json();
+      showToast(data.message || data.error || (response.ok ? 'Backup restored.' : 'Restore failed.'), response.ok ? 'success' : 'error');
+      if (response.ok) location.reload();
+    }
+
+    async function createEncryptedBackup() {
+      const result = document.getElementById('backupResult');
+      result.textContent = 'Creating encrypted backup...';
+      const res = await fetch('/admin/maintenance/backup', { method:'POST', headers:csrfHeaders() });
+      const data = await res.json();
+      result.textContent = res.ok ? `Created: ${data.filename}` : (data.error || 'Backup creation failed.');
+      result.style.color = res.ok ? 'var(--teal-glow)' : '#ff8888';
+      if (res.ok) {
+        document.getElementById('restoreBackupFilename').value = data.filename;
+        await loadAvailableBackupFilenames();
+      }
+    }
+
+    async function loadAvailableBackupFilenames() {
+      const response = await fetch('/admin/maintenance/backups');
+      if (!response.ok) return;
+      const data = await response.json();
+      document.getElementById('availableBackupFilenames').innerHTML = data.backups
+        .map(backup => `<option value="${escapeHtml(backup.filename)}"></option>`).join('');
+    }
+
+    async function restoreEncryptedBackup() {
+      const filename = document.getElementById('restoreBackupFilename').value.trim();
+      if (!filename) return showToast('Enter a .vwb backup filename.', 'error');
+      if (!confirm('Restoring replaces the active database. Continue only with an approved backup?')) return;
+      const res = await fetch('/admin/maintenance/restore', { method:'POST', headers:csrfHeaders({'Content-Type':'application/json'}), body:JSON.stringify({filename}) });
+      const data = await res.json();
+      showToast(data.message || data.error || (res.ok ? 'Backup restored.' : 'Restore failed.'), res.ok ? 'success' : 'error');
+      if (res.ok) location.reload();
+    }
+
+    async function rotateEncryptionKeys() {
+      const tier = document.getElementById('rotationTier').value;
+      const result = document.getElementById('rotationResult');
+      result.textContent = 'Rotating encryption keys...';
+      const res = await fetch('/admin/maintenance/rotate-keys', { method:'POST', headers:csrfHeaders({'Content-Type':'application/json'}), body:JSON.stringify(tier ? {tier} : {}) });
+      const data = await res.json();
+      if (res.ok) {
+        result.textContent = data.results.map(item => `${item.tier}: version ${item.key_version || 'n/a'}, ${item.records_reencrypted} records re-encrypted`).join(' | ');
+        result.style.color = 'var(--teal-glow)';
+        fetchResilienceHealth();
+      } else {
+        result.textContent = data.error || 'Key rotation failed.';
+        result.style.color = '#ff8888';
+      }
+    }
+
+    async function fetchPrivacyGovernance() {
+      const policyResponse = await fetch('/privacy/retention-policy');
+      if (!policyResponse.ok) {
+        showToast('Unable to load privacy governance controls.', 'error');
+        return;
+      }
+      const policy = await policyResponse.json();
+      document.getElementById('privacyPolicy').innerHTML = `
+        <div class="system-card"><strong>Retention period</strong><span>${policy.retention_years} years</span></div>
+        <div class="system-card"><strong>Legal holds</strong><span>Protected from purge</span></div>
+        <div class="system-card"><strong>Erasure</strong><span>Admin review required</span></div>`;
+      fetchErasureRequests();
+      fetchSecurityIncidents();
+    }
+
+    async function downloadPatientData() {
+      const patientId = document.getElementById('privacyExportPatientId').value;
+      if (!patientId) return showToast('Enter a patient database ID.', 'error');
+      window.location.href = `/privacy/export/patients/${patientId}`;
+    }
+
+    function downloadAllPatientData() {
+      window.location.href = '/privacy/data-export';
+    }
+
+    async function previewRetention() {
+      const res = await fetch('/privacy/admin/retention/preview');
+      const data = await res.json();
+      if (!res.ok) return showToast(data.error || 'Unable to preview retention purge.', 'error');
+      showToast(`${data.eligible_patients} patients eligible for deletion; ${data.legal_hold_excluded} legal holds excluded.`);
+    }
+
+    async function purgeRetention() {
+      if (!confirm('Run the retention purge for records outside the configured retention period?')) return;
+      const res = await fetch('/privacy/admin/retention/purge', { method:'POST', headers:csrfHeaders() });
+      const data = await res.json();
+      showToast(data.message || data.error || 'Retention purge failed.', res.ok ? 'success' : 'error');
+    }
+
+    async function updateLegalHold() {
+      const patientId = document.getElementById('privacyHoldPatientId').value;
+      const hold = document.getElementById('privacyHoldValue').value === 'true';
+      if (!patientId) return showToast('Enter a patient database ID.', 'error');
+      const res = await fetch(`/privacy/admin/patients/${patientId}/legal-hold`, {
+        method:'PUT', headers:csrfHeaders({'Content-Type':'application/json'}), body:JSON.stringify({retention_hold:hold})
+      });
+      const data = await res.json();
+      showToast(data.error || `Legal hold ${hold ? 'placed' : 'released'}.`, res.ok ? 'success' : 'error');
+    }
+
+    async function fetchErasureRequests() {
+      const res = await fetch('/privacy/admin/erasure-requests');
+      if (!res.ok) return;
+      const requests = await res.json();
+      document.getElementById('erasureRequestsList').innerHTML = requests.length ? `<table><thead><tr><th>ID</th><th>Patient</th><th>Status</th><th>Reason</th><th>Action</th></tr></thead><tbody>${requests.map(item => `<tr><td>${item.id}</td><td>${item.patient_id}</td><td>${item.status}</td><td>${item.reason}</td><td>${item.status === 'pending' ? `<button class="btn btn-small" onclick="decideErasure(${item.id}, 'approve')">Approve</button> <button class="btn btn-small btn-danger" onclick="decideErasure(${item.id}, 'reject')">Reject</button>` : 'Completed'}</td></tr>`).join('')}</tbody></table>` : '<p style="color:var(--muted);">No erasure requests.</p>';
+    }
+
+    async function decideErasure(requestId, decision) {
+      const note = prompt(`Enter the written reason for ${decision}:`);
+      if (!note) return;
+      const res = await fetch(`/privacy/admin/erasure-requests/${requestId}/decision`, { method:'POST', headers:csrfHeaders({'Content-Type':'application/json'}), body:JSON.stringify({decision, note}) });
+      const data = await res.json();
+      showToast(data.message || data.error || 'Decision failed.', res.ok ? 'success' : 'error');
+      if (res.ok) fetchErasureRequests();
+    }
+
+    async function fetchSecurityIncidents() {
+      const res = await fetch('/privacy/admin/incidents');
+      if (!res.ok) return;
+      const incidents = await res.json();
+      document.getElementById('incidentsList').innerHTML = incidents.length ? `<table><thead><tr><th>Title</th><th>Severity</th><th>Status</th><th>Discovered</th><th>Action</th></tr></thead><tbody>${incidents.map(item => `<tr><td>${item.title}</td><td>${item.severity}</td><td>${item.status}</td><td>${item.discovered_at}</td><td>${item.status !== 'resolved' ? `<button class="btn btn-small" onclick="advanceIncident(${item.id}, '${item.status === 'open' ? 'contained' : item.status === 'contained' ? 'notified' : 'resolved'}')">Advance</button>` : 'Closed'}</td></tr>`).join('')}</tbody></table>` : '<p style="color:var(--muted);">No security incidents.</p>';
+    }
+
+    async function createSecurityIncident(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const submitButton = form.querySelector('button[type="submit"]');
+      submitButton.disabled = true;
+      try {
+        const res = await fetch('/privacy/admin/incidents', {
+          method: 'POST',
+          headers: csrfHeaders({'Content-Type': 'application/json'}),
+          body: JSON.stringify({
+            title: document.getElementById('incidentTitle').value.trim(),
+            severity: document.getElementById('incidentSeverity').value,
+            summary: document.getElementById('incidentSummary').value.trim(),
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          showToast(data.error || `Unable to open incident (HTTP ${res.status}).`, 'error');
+          return;
+        }
+        showToast('Incident opened.', 'success');
+        form.reset();
+        await fetchSecurityIncidents();
+      } catch (error) {
+        showToast('Unable to reach the server. Check your connection and try again.', 'error');
+      } finally {
+        submitButton.disabled = false;
+      }
+    }
+
+    async function advanceIncident(incidentId, status) {
+      const res = await fetch(`/privacy/admin/incidents/${incidentId}`, { method:'PUT', headers:csrfHeaders({'Content-Type':'application/json'}), body:JSON.stringify({status}) });
+      const data = await res.json();
+      showToast(data.error || (res.ok ? `Incident marked ${status}.` : 'Unable to update incident.'), res.ok ? 'success' : 'error');
+      if (res.ok) fetchSecurityIncidents();
+    }
+
+    async function fetchAudit() {
+      const res = await fetch('/admin/audit');
+      if (res.ok) {
+        const data = await res.json();
+        let html = `<table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Action</th>
+              <th>Affected Table</th>
+              <th>IP Address</th>
+              <th>Timestamp</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>`;
+        data.logs.forEach(log => {
+          html += `<tr>
+            <td>${log.id}</td>
+            <td>${log.action}</td>
+            <td>${log.table_affected || 'N/A'}</td>
+            <td>${log.ip_address || 'System'}</td>
+            <td>${log.timestamp}</td>
+            <td><span style="color:var(--muted);font-size:12px;">Chain protected</span></td>
+          </tr>`;
+        });
+        html += `</tbody></table>`;
+        document.getElementById('auditList').innerHTML = html;
+      } else {
+        showToast('Unable to load audit logs.', 'error');
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>'"]/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+      }[character]));
+    }
+
+    async function fetchSecurityActivity() {
+      const res = await fetch('/admin/security-activity');
+      if (!res.ok) return;
+      const data = await res.json();
+      const badge = document.getElementById('securityUnreadBadge');
+      badge.textContent = data.unread_count;
+      badge.style.display = data.unread_count ? 'inline-block' : 'none';
+      document.getElementById('securityActivityList').innerHTML = data.events.length ? data.events.map(event => `
+        <article class="security-event ${escapeHtml(event.severity)} ${event.is_unread ? 'security-unread' : ''}">
+          <div class="security-event-header">
+            <span class="security-event-title">${escapeHtml(event.title)}</span>
+            <span class="security-event-meta">${event.timestamp ? escapeHtml(new Date(event.timestamp).toLocaleString()) : 'Reminder'}</span>
+          </div>
+          <div class="security-event-message">${escapeHtml(event.message)}</div>
+          <div class="security-event-meta" style="margin-top:8px;">Account: ${escapeHtml(event.actor)}${event.ip_address ? ` &middot; Source: ${escapeHtml(event.ip_address)}` : ''}</div>
+        </article>`).join('') : '<p style="color:var(--muted);">No security activity to review.</p>';
+    }
+
+    async function markSecurityActivityRead() {
+      const res = await fetch('/admin/security-activity/mark-read', { method:'POST', headers:csrfHeaders() });
+      if (res.ok) {
+        fetchSecurityActivity();
+        showToast('Security activity marked as read.');
+      }
+    }
+
+    async function fetchSystemInfo() {
+      const res = await fetch('/admin/stats');
+      if (!res.ok) {
+        showToast('Unable to load system information.', 'error');
+        return;
+      }
+      const stats = await res.json();
+      document.getElementById('systemInfoBody').innerHTML = `
+        <div class="system-card"><strong>Patients</strong><span>${stats.total_patients}</span></div>
+        <div class="system-card"><strong>Medical records</strong><span>${stats.total_records}</span></div>
+        <div class="system-card"><strong>Users</strong><span>${stats.total_users}</span></div>
+        <div class="system-card"><strong>Audit entries</strong><span>${stats.total_audit_entries}</span></div>
+        <div class="system-card"><strong>Break-glass events</strong><span>${stats.break_glass_events}</span></div>
+        <div class="system-card"><strong>Browser</strong><span>${navigator.userAgent.includes('Edg') ? 'Microsoft Edge' : navigator.userAgent.includes('Chrome') ? 'Google Chrome' : 'Web browser'}</span></div>`;
+    }
+
+    async function submitNewPatientForm(e) {
+      e.preventDefault();
+      const data = {
+        full_name: document.getElementById('new_full_name').value.trim(),
+        date_of_birth: document.getElementById('new_date_of_birth').value,
+        gender: document.getElementById('new_gender').value,
+        national_id: document.getElementById('new_national_id').value.trim(),
+        phone: document.getElementById('new_phone').value.trim(),
+        email: document.getElementById('new_email').value.trim(),
+        address: document.getElementById('new_address').value.trim(),
+        next_of_kin: document.getElementById('new_next_of_kin').value.trim(),
+        blood_type: document.getElementById('new_blood_type').value.trim(),
+        known_allergies: document.getElementById('new_known_allergies').value.trim(),
+        chronic_conditions: document.getElementById('new_chronic_conditions').value.trim(),
+        current_medications: document.getElementById('new_current_medications').value.trim(),
+        primary_physician: document.getElementById('new_primary_physician').value.trim(),
+        admission_date: document.getElementById('new_admission_date').value,
+        department: document.getElementById('new_department').value.trim(),
+        insurance_provider: document.getElementById('new_insurance_provider').value.trim(),
+        medical_aid_number: document.getElementById('new_medical_aid_number').value.trim(),
+        referring_facility: document.getElementById('new_referring_facility').value.trim(),
+      };
+
+      try {
+        const isEditing = Boolean(editingPatientId);
+        const res = await fetch(editingPatientId ? `/records/patients/${editingPatientId}` : '/records/patients', {
+          method: editingPatientId ? 'PUT' : 'POST',
+          headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify(data),
+        });
+        const responseText = await res.text();
+        let result = {};
+        try {
+          result = responseText ? JSON.parse(responseText) : {};
+        } catch (parseError) {
+          result = { error: `Server error (${res.status}). Please try again.` };
+        }
+        if (!res.ok) {
+          document.getElementById('patientFormError').textContent = result.error || 'Failed to create patient.';
+          document.getElementById('patientFormError').style.display = 'block';
+          return;
+        }
+        closeNewPatientModal();
+        fetchPatients();
+        showToast(isEditing ? 'Patient updated successfully.' : 'Patient created successfully.');
+      } catch (err) {
+        document.getElementById('patientFormError').textContent = 'Unable to reach the server. Please check that VaultWard is running and try again.';
+        document.getElementById('patientFormError').style.display = 'block';
+      }
+    }
+
+    function openNewPatientModal() {
+      editingPatientId = null;
+      document.getElementById('patientFormTitle').textContent = 'New Patient';
+      document.getElementById('patientFormSubmit').textContent = 'Create Patient';
+      document.getElementById('newPatientForm').reset();
+      document.getElementById('patientFormError').style.display = 'none';
+      document.getElementById('newPatientModal').classList.remove('hidden');
+    }
+
+    function closeNewPatientModal() {
+      editingPatientId = null;
+      document.getElementById('newPatientForm').reset();
+      document.getElementById('patientFormError').style.display = 'none';
+      document.getElementById('newPatientModal').classList.add('hidden');
+    }
+
+    async function viewPatient(id) {
+      const res = await fetch(`/records/patients/${id}`);
+      const result = await res.json();
+      if (!res.ok) {
+        showToast(result.error || 'Unable to load patient.', 'error');
+        return;
+      }
+      const p = result.patient;
+      const records = result.records || [];
+      document.getElementById('patientDetailsTitle').textContent = p.full_name;
+      document.getElementById('patientDetailsSubtitle').textContent = `${p.patient_id} · ${p.gender || 'Gender not specified'}`;
+      document.getElementById('patientDetailsBody').innerHTML = `
+        <div class="details-grid">
+          <div><strong>Date of birth</strong><span>${p.date_of_birth}</span></div>
+          <div><strong>Phone</strong><span>${p.phone || 'Not provided'}</span></div>
+          <div><strong>Email</strong><span>${p.email || 'Not provided'}</span></div>
+          <div><strong>Blood type</strong><span>${p.blood_type || 'Not provided'}</span></div>
+          <div class="details-full"><strong>Address</strong><span>${p.address || 'Not provided'}</span></div>
+          <div class="details-full"><strong>Known allergies</strong><span>${p.known_allergies || 'None recorded'}</span></div>
+        </div>
+        <h4 class="records-heading">Medical records (${records.length})</h4>
+        ${records.length ? records.map(record => `<div class="record-item"><strong>${record.record_type || 'Consultation'}</strong><span>${record.created_at}</span><p>${record.diagnosis}</p></div>`).join('') : '<p class="muted-message">No medical records recorded.</p>'}`;
+      document.getElementById('patientDetailsModal').classList.remove('hidden');
+    }
+
+    function closePatientDetails() {
+      document.getElementById('patientDetailsModal').classList.add('hidden');
+    }
+
+    async function editPatient(id) {
+      const res = await fetch(`/records/patients/${id}`);
+      const result = await res.json();
+      if (!res.ok) {
+        showToast(result.error || 'Unable to load patient.', 'error');
+        return;
+      }
+      const p = result.patient;
+      editingPatientId = id;
+      document.getElementById('patientFormTitle').textContent = 'Edit Patient';
+      document.getElementById('patientFormSubmit').textContent = 'Save Changes';
+      const values = {
+        full_name: p.full_name, date_of_birth: p.date_of_birth, gender: p.gender || '',
+        national_id: p.national_id, phone: p.phone, email: p.email, address: p.address,
+        next_of_kin: p.next_of_kin, blood_type: p.blood_type, known_allergies: p.known_allergies,
+        chronic_conditions: p.chronic_conditions, current_medications: p.current_medications,
+        primary_physician: p.primary_physician, admission_date: p.admission_date || '',
+        department: p.department, insurance_provider: p.insurance_provider,
+        medical_aid_number: p.medical_aid_number, referring_facility: p.referring_facility,
+      };
+      Object.entries(values).forEach(([field, value]) => {
+        document.getElementById(`new_${field}`).value = value || '';
+      });
+      document.getElementById('newPatientModal').classList.remove('hidden');
+    }
+
+    async function removePatient(id, name) {
+      if (!confirm(`Remove ${name}? This also removes their medical records and cannot be undone.`)) return;
+      const res = await fetch(`/records/patients/${id}`, { method: 'DELETE', headers: csrfHeaders() });
+      const result = await res.json();
+      if (!res.ok) {
+        showToast(result.error || 'Unable to remove patient.', 'error');
+        return;
+      }
+      fetchPatients();
+      showToast('Patient removed successfully.');
+    }
+
+    function openAuditDeleteModal(id) {
+      pendingAuditDeleteId = id;
+      document.getElementById('auditDeletePassword').value = '';
+      document.getElementById('auditDeleteModal').classList.remove('hidden');
+      document.getElementById('auditDeletePassword').focus();
+    }
+
+    function closeAuditDeleteModal() {
+      pendingAuditDeleteId = null;
+      document.getElementById('auditDeleteModal').classList.add('hidden');
+    }
+
+    async function submitAuditDelete(event) {
+      event.preventDefault();
+      const submitButton = event.submitter || event.target.querySelector('button[type="submit"]');
+      if (submitButton.disabled || !pendingAuditDeleteId) return;
+      submitButton.disabled = true;
+      submitButton.textContent = 'Checking...';
+      const password = document.getElementById('auditDeletePassword').value;
+      try {
+        const res = await fetch(`/admin/audit/${pendingAuditDeleteId}`, {
+          method: 'DELETE',
+          headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ password }),
+        });
+        const result = await res.json();
+        if (!res.ok) {
+          showToast(result.error || 'Unable to remove audit log.', 'error');
+          closeAuditDeleteModal();
+          return;
+        }
+        closeAuditDeleteModal();
+        fetchAudit();
+        showToast('Audit log removed.');
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Remove Log';
+      }
+    }
+
+    async function verifyChain() {
+      const resultDiv = document.getElementById('verifyResult');
+      resultDiv.textContent = 'Verifying hash chain...';
+      resultDiv.style.color = 'var(--muted)';
+      
+      const res = await fetch('/admin/audit/verify-chain');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status === 'intact') {
+          resultDiv.textContent = '✅ Chain intact. No tampering detected.';
+          resultDiv.style.color = 'var(--teal-glow)';
+        } else {
+          resultDiv.textContent = `❌ TAMPER DETECTED at entry ${data.broken_at}`;
+          resultDiv.style.color = '#ff6b6b';
+        }
+      }
+    }
+
+    window.onload = checkAuth;
+  </script>
+</body>
+</html>

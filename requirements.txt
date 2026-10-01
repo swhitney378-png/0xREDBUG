@@ -1,0 +1,19 @@
+# ── Core dependencies (required in all environments) ──────────────────────────
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+Flask-Login==0.6.3
+Flask-WTF==1.2.1
+Flask-Limiter==4.1.1
+cryptography==42.0.5
+argon2-cffi==23.1.0
+pyotp==2.9.0
+qrcode==7.4.2
+python-dotenv==1.0.1
+reportlab==4.5.1
+
+# ── Production only ────────────────────────────────────────────────────────────
+# psycopg2-binary requires PostgreSQL client headers.
+# Install separately on production servers that run against PostgreSQL:
+#   pip install psycopg2-binary==2.9.9
+#
+# gunicorn==22.0.0
